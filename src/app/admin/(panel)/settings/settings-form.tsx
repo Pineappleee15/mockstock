@@ -1,0 +1,86 @@
+"use client";
+
+import { updateCompetition } from "@/actions/admin";
+import { ActionForm } from "@/components/action-button";
+import { Card, Input } from "@/components/ui";
+
+interface Comp {
+  id: number; name: string; mode: string; state: string;
+  startingCashPaise: number; brokerageBps: number; spreadBps: number;
+  concentrationCapBps: number; orderRateLimitPerMin: number; circuitLimitBps: number;
+  tickIntervalSeconds: number; volatilityMultiplierBps: number;
+  orderFlowEnabled: boolean; impactCoefficientBps: number; maxImpactBpsPerTick: number;
+  gapHalflifeSeconds: number; permanentImpactBps: number;
+}
+
+function Field({
+  label, name, defaultValue, hint, ...rest
+}: { label: string; name: string; defaultValue: string | number; hint?: string } &
+  React.InputHTMLAttributes<HTMLInputElement>) {
+  return (
+    <label className="block">
+      <span className="mb-1 block text-xs font-medium text-muted">{label}</span>
+      <Input name={name} defaultValue={defaultValue} {...rest} />
+      {hint && <span className="mt-0.5 block text-[11px] text-muted">{hint}</span>}
+    </label>
+  );
+}
+
+export function SettingsForm({ competition: c }: { competition: Comp }) {
+  return (
+    <div className="space-y-4">
+      <ActionForm run={(fd) => updateCompetition(c.id, fd)} submitLabel="Save settings">
+        <Card className="p-3">
+          <h2 className="mb-3 text-sm font-semibold">Competition</h2>
+          <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
+            <Field label="Name" name="name" defaultValue={c.name} required />
+            <Field label="Starting cash (₹)" name="startingCashRupees" type="number" step="1"
+              defaultValue={c.startingCashPaise / 100}
+              hint="Applies to teams created after this change." />
+            <Field label="Brokerage (bps)" name="brokerageBps" type="number"
+              defaultValue={c.brokerageBps} hint="5 = 0.05% per trade" />
+            <Field label="Spread (bps)" name="spreadBps" type="number"
+              defaultValue={c.spreadBps} hint="20 = 0.2%, half applied each side" />
+            <Field label="Concentration cap (bps)" name="concentrationCapBps" type="number"
+              defaultValue={c.concentrationCapBps} hint="4000 = 40% max in one stock" />
+            <Field label="Order rate limit (per min)" name="orderRateLimitPerMin" type="number"
+              defaultValue={c.orderRateLimitPerMin} />
+            <Field label="Circuit limit (bps)" name="circuitLimitBps" type="number"
+              defaultValue={c.circuitLimitBps} hint="2000 = halt after a 20% move from session open" />
+            <Field label="Tick interval (seconds)" name="tickIntervalSeconds" type="number"
+              defaultValue={c.tickIntervalSeconds} hint="Takes effect without a restart" />
+            <Field label="Volatility multiplier (bps)" name="volatilityMultiplierBps" type="number"
+              defaultValue={c.volatilityMultiplierBps} hint="10000 = 1.0x. 20000 makes the event twice as wild." />
+          </div>
+        </Card>
+
+        <Card className="p-3">
+          <h2 className="text-sm font-semibold">Order flow impact</h2>
+          <p className="mb-3 text-[11px] text-muted">
+            This is the primary price driver: what teams buy and sell is what moves prices.
+            The pullback half-life is the most important knob — it is what stops the opening
+            rush from pumping every stock and leaving nothing to trade for the rest of the event.
+          </p>
+          <label className="mb-3 flex items-center gap-2 text-sm">
+            <input type="checkbox" name="orderFlowEnabled" defaultChecked={c.orderFlowEnabled}
+              className="size-4 accent-[var(--color-accent)]" />
+            Enable order flow impact
+          </label>
+          <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
+            <Field label="Impact coefficient (bps)" name="impactCoefficientBps" type="number"
+              defaultValue={c.impactCoefficientBps}
+              hint="bps of move when net volume equals the stock's liquidity" />
+            <Field label="Max impact per tick (bps)" name="maxImpactBpsPerTick" type="number"
+              defaultValue={c.maxImpactBpsPerTick} hint="200 = 2% ceiling per tick" />
+            <Field label="Pullback half-life (seconds)" name="gapHalflifeSeconds" type="number"
+              defaultValue={c.gapHalflifeSeconds}
+              hint="How fast a flow-driven move decays back to fair value" />
+            <Field label="Permanent share (bps)" name="permanentImpactBps" type="number"
+              defaultValue={c.permanentImpactBps}
+              hint="3000 = 30% of each move permanently re-rates the stock" />
+          </div>
+        </Card>
+      </ActionForm>
+    </div>
+  );
+}

@@ -1,0 +1,55 @@
+@import "tailwindcss";
+
+@theme {
+  --color-bg:        #0a0c10;
+  --color-surface:   #12151c;
+  --color-surface-2: #181c25;
+  --color-border:    #242938;
+  --color-text:      #e6e9ef;
+  --color-muted:     #8b93a7;
+  --color-up:        #22c55e;
+  --color-up-dim:    #14532d;
+  --color-down:      #ef4444;
+  --color-down-dim:  #571414;
+  --color-accent:    #f5b301;
+
+  --font-mono: ui-monospace, "SF Mono", "Cascadia Mono", Menlo, Consolas, monospace;
+}
+
+html, body {
+  background: var(--color-bg);
+  color: var(--color-text);
+  -webkit-text-size-adjust: 100%;
+}
+
+body {
+  font-family: ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+  font-size: 14px;
+}
+
+/* Numbers must not jitter while they tick. */
+.num { font-variant-numeric: tabular-nums; font-feature-settings: "tnum"; }
+
+/* Brief flash on a price change. Keyed on the value so React remounts it. */
+@keyframes flash-up   { 0% { background-color: color-mix(in oklab, var(--color-up) 28%, transparent); } 100% { background-color: transparent; } }
+@keyframes flash-down { 0% { background-color: color-mix(in oklab, var(--color-down) 28%, transparent); } 100% { background-color: transparent; } }
+.flash-up   { animation: flash-up   700ms ease-out; }
+.flash-down { animation: flash-down 700ms ease-out; }
+
+@media (prefers-reduced-motion: reduce) {
+  .flash-up, .flash-down { animation: none; }
+}
+
+@keyframes marquee { from { transform: translateX(0); } to { transform: translateX(-50%); } }
+.marquee { animation: marquee 45s linear infinite; }
+@media (prefers-reduced-motion: reduce) { .marquee { animation: none; } }
+
+::-webkit-scrollbar { width: 10px; height: 10px; }
+::-webkit-scrollbar-track { background: var(--color-bg); }
+::-webkit-scrollbar-thumb { background: var(--color-border); border-radius: 5px; }
+
+input, select, textarea, button { font: inherit; }
+input:focus-visible, select:focus-visible, textarea:focus-visible, button:focus-visible {
+  outline: 2px solid var(--color-accent);
+  outline-offset: 1px;
+}

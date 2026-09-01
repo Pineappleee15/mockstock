@@ -1,0 +1,11 @@
+{
+  "version": "0.0.1",
+  "configurations": [
+    {
+      "name": "mockstock",
+      "runtimeExecutable": "C:\Users\aadit\Downloads\mockstock\.tools\node\npm.cmd",
+      "runtimeArgs": ["run", "start"],
+      "port": 3000
+    }
+  ]
+}

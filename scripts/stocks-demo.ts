@@ -1,0 +1,67 @@
+/** 20 Indian stocks across sectors for the demo competition. Prices in rupees. */
+export interface SeedStock {
+  symbol: string; name: string; sector: string; price: number; volBps: number;
+}
+
+export const DEMO_STOCKS: SeedStock[] = [
+  { symbol: "TCS",        name: "Tata Consultancy Services", sector: "IT",        price: 4150,  volBps: 45 },
+  { symbol: "INFY",       name: "Infosys",                   sector: "IT",        price: 1890,  volBps: 55 },
+  { symbol: "WIPRO",      name: "Wipro",                     sector: "IT",        price: 545,   volBps: 70 },
+  { symbol: "HCLTECH",    name: "HCL Technologies",          sector: "IT",        price: 1720,  volBps: 60 },
+
+  { symbol: "HDFCBANK",   name: "HDFC Bank",                 sector: "Banking",   price: 1680,  volBps: 40 },
+  { symbol: "ICICIBANK",  name: "ICICI Bank",                sector: "Banking",   price: 1250,  volBps: 45 },
+  { symbol: "SBIN",       name: "State Bank of India",       sector: "Banking",   price: 820,   volBps: 65 },
+  { symbol: "KOTAKBANK",  name: "Kotak Mahindra Bank",       sector: "Banking",   price: 1790,  volBps: 50 },
+
+  { symbol: "RELIANCE",   name: "Reliance Industries",       sector: "Energy",    price: 2950,  volBps: 50 },
+  { symbol: "ONGC",       name: "Oil & Natural Gas Corp",    sector: "Energy",    price: 265,   volBps: 85 },
+  { symbol: "NTPC",       name: "NTPC",                      sector: "Energy",    price: 360,   volBps: 55 },
+  { symbol: "POWERGRID",  name: "Power Grid Corp",           sector: "Energy",    price: 320,   volBps: 50 },
+
+  { symbol: "TATAMOTORS", name: "Tata Motors",               sector: "Auto",      price: 985,   volBps: 90 },
+  { symbol: "MARUTI",     name: "Maruti Suzuki",             sector: "Auto",      price: 12400, volBps: 45 },
+  { symbol: "MAHINDRA",   name: "Mahindra & Mahindra",       sector: "Auto",      price: 2870,  volBps: 60 },
+  { symbol: "BAJAJAUTO",  name: "Bajaj Auto",                sector: "Auto",      price: 9500,  volBps: 55 },
+
+  { symbol: "HINDUNILVR", name: "Hindustan Unilever",        sector: "FMCG",      price: 2480,  volBps: 35 },
+  { symbol: "ITC",        name: "ITC",                       sector: "FMCG",      price: 465,   volBps: 40 },
+  { symbol: "SUNPHARMA",  name: "Sun Pharmaceutical",        sector: "Pharma",    price: 1780,  volBps: 55 },
+  { symbol: "TATASTEEL",  name: "Tata Steel",                sector: "Metals",    price: 145,   volBps: 100 },
+];
+
+export const DEMO_TEAMS = [
+  { name: "Bulls of Dalal Street", members: "Aarav, Diya, Kabir" },
+  { name: "The Short Squeeze",     members: "Ishaan, Meera" },
+  { name: "Alpha Seekers",         members: "Rohan, Ananya, Vikram" },
+  { name: "Circuit Breakers",      members: "Sara, Arjun" },
+  { name: "Margin of Safety",      members: "Nikhil, Tara, Dev" },
+  { name: "Blue Chip Bandits",     members: "Priya, Aditya" },
+  { name: "Volatility Vultures",   members: "Karan, Nisha, Rehan" },
+  { name: "Compounders Club",      members: "Sneha, Manav" },
+  { name: "Delta Neutral",         members: "Zoya, Harsh, Ira" },
+  { name: "The Contrarians",       members: "Yash, Riya" },
+];
+
+export const DEMO_NEWS = [
+  {
+    headline: "RBI holds repo rate, signals softer stance for the rest of FY",
+    body: "Banking stocks rally on expectations of cheaper credit through the year.",
+    impactBps: 350, decaySeconds: 180, sectors: ["Banking"],
+  },
+  {
+    headline: "US client budgets frozen: mid-tier IT deal pipeline slips two quarters",
+    body: "Large-cap IT services guidance now looks optimistic to analysts.",
+    impactBps: -420, decaySeconds: 240, sectors: ["IT"],
+  },
+  {
+    headline: "Crude spikes 9% overnight after supply disruption",
+    body: "Upstream producers gain, refiners and auto makers under pressure.",
+    impactBps: 500, decaySeconds: 150, sectors: ["Energy"],
+  },
+  {
+    headline: "GST council cuts rate on small cars and two-wheelers",
+    body: "Festive demand expected to pull forward into the current quarter.",
+    impactBps: 450, decaySeconds: 200, sectors: ["Auto"],
+  },
+];
