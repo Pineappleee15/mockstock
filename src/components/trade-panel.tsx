@@ -98,7 +98,7 @@ export function TradePanel(props: Props) {
 
   return (
     <>
-      <Card className="fixed inset-x-0 bottom-0 z-30 rounded-b-none border-x-0 border-b-0 p-3 sm:static sm:rounded-lg sm:border">
+      <Card className="glass-pill fixed inset-x-2 bottom-[calc(6.75rem+env(safe-area-inset-bottom,0px))] z-30 rounded-3xl p-3 sm:static sm:inset-x-auto sm:bottom-auto sm:rounded-2xl sm:border sm:bg-surface sm:shadow-none">
         <div className="mx-auto max-w-6xl space-y-2">
           <div className="grid grid-cols-2 gap-2">
             <Button variant={side === "buy" ? "buy" : "default"} onClick={() => setSide("buy")}>Buy</Button>

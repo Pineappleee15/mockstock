@@ -78,8 +78,8 @@ body::before {
    genuinely something to blur. Over a flat panel it is just grey. */
 .glass {
   background: color-mix(in oklab, var(--color-surface) 72%, transparent);
-  backdrop-filter: blur(14px) saturate(150%);
   -webkit-backdrop-filter: blur(14px) saturate(150%);
+  backdrop-filter: blur(14px) saturate(150%);
   border-bottom: 1px solid color-mix(in oklab, var(--color-border) 80%, transparent);
 }
 @supports not (backdrop-filter: blur(1px)) {
@@ -187,4 +187,55 @@ input:focus-visible, select:focus-visible, textarea:focus-visible, button:focus-
 
 @media (prefers-reduced-motion: reduce) {
   .tilt-l, .tilt-r { transform: none; }
+}
+
+/* ══════════════════════════════════════════════════════════════════════
+   FLOATING GLASS
+   The iOS pattern: controls detach from the page, float above it, and let
+   the gradient wash show through. Only works because there is something
+   behind worth blurring — on the old flat black this was cost with no effect.
+   ══════════════════════════════════════════════════════════════════════ */
+
+.glass-pill {
+  background: color-mix(in oklab, var(--color-surface-2) 62%, transparent);
+  -webkit-backdrop-filter: blur(22px) saturate(180%);
+  backdrop-filter: blur(22px) saturate(180%);
+  border: 1px solid color-mix(in oklab, #ffffff 9%, transparent);
+  box-shadow:
+    0 8px 30px -8px rgba(0, 0, 0, 0.55),
+    inset 0 1px 0 color-mix(in oklab, #ffffff 10%, transparent);
+}
+
+@supports not (backdrop-filter: blur(1px)) {
+  .glass-pill { background: var(--color-surface-2); }
+}
+
+/* The selected tab: a soft lozenge rather than a hard fill. */
+.tab-active {
+  background: color-mix(in oklab, var(--color-accent) 20%, transparent);
+  box-shadow: inset 0 0 0 1px color-mix(in oklab, var(--color-accent) 28%, transparent);
+}
+
+/* Surfaces get a hairline top highlight, which is most of what makes iOS
+   panels look lit rather than painted. */
+.lit {
+  box-shadow:
+    inset 0 1px 0 color-mix(in oklab, #ffffff 6%, transparent),
+    0 1px 2px rgba(0, 0, 0, 0.25);
+}
+
+/* Room for the floating bar so nothing hides behind it. */
+.pad-tabbar { padding-bottom: calc(6.5rem + env(safe-area-inset-bottom, 0px)); }
+
+@media (min-width: 640px) {
+  .pad-tabbar { padding-bottom: 1rem; }
+}
+
+/* Pressed state for touch targets — iOS scales rather than changing colour. */
+.press { transition: transform 140ms ease, opacity 140ms ease; }
+.press:active { transform: scale(0.94); opacity: 0.85; }
+
+@media (prefers-reduced-motion: reduce) {
+  .press { transition: none; }
+  .press:active { transform: none; }
 }

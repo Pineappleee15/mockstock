@@ -3,6 +3,7 @@ import { redirect } from "next/navigation";
 import { currentActor } from "@/lib/auth";
 import { activeCompetition } from "@/lib/queries";
 import { NewsTicker } from "@/components/news-ticker";
+import { TabBar } from "@/components/tab-bar";
 import { ensureTicker } from "@/lib/boot";
 import { logout } from "@/actions/auth";
 
@@ -58,10 +59,10 @@ export default async function AppLayout({ children }: { children: React.ReactNod
           </div>
         </div>
 
-        <nav className="mx-auto flex max-w-6xl gap-1 overflow-x-auto px-2 pb-1">
+        <nav className="mx-auto hidden max-w-6xl gap-1 px-2 pb-1 sm:flex">
           {NAV.map((n) => (
             <Link key={n.href} href={n.href}
-              className="rounded-md px-3 py-1.5 text-sm text-muted hover:bg-surface-2 hover:text-text">
+              className="rounded-lg px-3 py-1.5 text-sm text-muted transition-colors hover:bg-white/5 hover:text-text">
               {n.label}
             </Link>
           ))}
@@ -70,7 +71,9 @@ export default async function AppLayout({ children }: { children: React.ReactNod
 
       <NewsTicker />
 
-      <main className="mx-auto w-full max-w-6xl flex-1 px-3 py-4">{children}</main>
+      <main className="pad-tabbar mx-auto w-full max-w-6xl flex-1 px-3 py-4">{children}</main>
+
+      <TabBar />
     </div>
   );
 }

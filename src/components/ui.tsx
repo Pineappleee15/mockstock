@@ -3,7 +3,7 @@ import { formatRupees, formatBps } from "@/lib/money";
 
 export function Card({ className, children }: { className?: string; children: React.ReactNode }) {
   return (
-    <div className={cn("rounded-lg border border-border bg-surface", className)}>{children}</div>
+    <div className={cn("lit rounded-2xl border border-white/[0.06] bg-surface", className)}>{children}</div>
   );
 }
 
@@ -14,7 +14,7 @@ export function Stat({
   tone?: "neutral" | "up" | "down";
 }) {
   return (
-    <div className="rounded-lg border border-border bg-surface px-3 py-2.5">
+    <div className="lit rounded-2xl border border-white/[0.06] bg-surface px-3 py-2.5">
       <div className="text-[11px] uppercase tracking-wide text-muted">{label}</div>
       <div className={cn(
         "num mt-0.5 text-lg font-semibold tabular-nums sm:text-xl",
@@ -69,7 +69,7 @@ export function Button({
     <button
       {...props}
       className={cn(
-        "inline-flex items-center justify-center rounded-md px-3 py-2 text-sm font-semibold",
+        "press inline-flex items-center justify-center rounded-xl px-3.5 py-2 text-sm font-semibold",
         "transition-colors disabled:cursor-not-allowed disabled:opacity-50",
         variant === "default" && "bg-surface-2 text-text hover:bg-border",
         variant === "buy" && "bg-up text-black hover:bg-up/90",
@@ -89,8 +89,8 @@ export function Input({ className, ...props }: React.InputHTMLAttributes<HTMLInp
     <input
       {...props}
       className={cn(
-        "w-full rounded-md border border-border bg-surface-2 px-3 py-2 text-sm",
-        "placeholder:text-muted/60",
+        "w-full rounded-xl border border-white/[0.07] bg-surface-2 px-3.5 py-2.5 text-sm",
+        "placeholder:text-muted/60 transition-colors focus:border-accent/40",
         className,
       )}
     />
@@ -101,7 +101,7 @@ export function Select({ className, children, ...props }: React.SelectHTMLAttrib
   return (
     <select
       {...props}
-      className={cn("w-full rounded-md border border-border bg-surface-2 px-3 py-2 text-sm", className)}
+      className={cn("w-full rounded-xl border border-white/[0.07] bg-surface-2 px-3.5 py-2.5 text-sm", className)}
     >
       {children}
     </select>
