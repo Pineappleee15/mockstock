@@ -1,27 +1,47 @@
 import Link from "next/link";
 import { redirect } from "next/navigation";
 import { currentActor } from "@/lib/auth";
+import { activeCompetition } from "@/lib/queries";
 import { LoginForm } from "./login-form";
+
+export const dynamic = "force-dynamic";
 
 export default async function LoginPage() {
   const actor = await currentActor();
   if (actor?.kind === "team") redirect("/dashboard");
   if (actor?.kind === "admin") redirect("/admin");
 
+  const comp = await activeCompetition();
+
   return (
-    <main className="mx-auto flex min-h-screen max-w-sm flex-col justify-center px-5 py-10">
-      <div className="mb-8">
-        <div className="text-2xl font-bold tracking-tight">
-          Mock<span className="text-accent">Stock</span>
+    <main className="paper-page flex min-h-screen flex-col items-center justify-center px-5 py-12">
+      <div className="w-full max-w-sm">
+        <header className="mb-7 text-center">
+          <p className="text-[11px] font-semibold uppercase tracking-[0.35em] text-[var(--color-ink-soft)]">
+            Bluechip presents
+          </p>
+          <h1 className="display mt-2 text-5xl leading-[0.9] sm:text-6xl">
+            Mock
+            <br />
+            <span className="paper-underline">Stock</span>
+          </h1>
+          {comp && (
+            <p className="mt-3 text-sm text-[var(--color-ink-soft)]">{comp.name}</p>
+          )}
+        </header>
+
+        <div className="paper-card tilt-l px-6 py-7">
+          <span className="paper-tape" aria-hidden />
+          <LoginForm />
         </div>
-        <p className="mt-1 text-sm text-muted">Enter your team join code to trade.</p>
+
+        <p className="mt-7 text-center text-xs text-[var(--color-ink-soft)]">
+          Running the event?{" "}
+          <Link href="/admin/login" className="font-semibold text-[var(--color-accent-ink)] underline underline-offset-2">
+            Admin sign in
+          </Link>
+        </p>
       </div>
-
-      <LoginForm />
-
-      <p className="mt-8 text-center text-xs text-muted">
-        Running the event? <Link href="/admin/login" className="text-accent hover:underline">Admin sign in</Link>
-      </p>
     </main>
   );
 }

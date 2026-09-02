@@ -1,17 +1,34 @@
 @import "tailwindcss";
 
 @theme {
-  --color-bg:        #0a0c10;
-  --color-surface:   #12151c;
-  --color-surface-2: #181c25;
-  --color-border:    #242938;
-  --color-text:      #e6e9ef;
-  --color-muted:     #8b93a7;
-  --color-up:        #22c55e;
-  --color-up-dim:    #14532d;
-  --color-down:      #ef4444;
-  --color-down-dim:  #571414;
-  --color-accent:    #f5b301;
+  /* ── Trading surfaces: deep navy, never black ──────────────────────── */
+  --color-bg:        #080f1d;
+  --color-surface:   #0e1930;
+  --color-surface-2: #152343;
+  --color-border:    #22345c;
+  --color-text:      #e9eefb;
+  --color-muted:     #8ea0c4;
+
+  /* Price direction. Reserved: these two colours mean one thing only. */
+  --color-up:        #2fd07f;
+  --color-up-dim:    #0d3a26;
+  --color-down:      #ff5a63;
+  --color-down-dim:  #491017;
+
+  /* ── Brand: rose gold ──────────────────────────────────────────────────
+     Used for identity, buttons, links, badges and focus rings — never on a
+     number. It is warm enough to be mistaken for the down-red at a glance,
+     so it is kept away from anything a participant reads as a value. */
+  --color-accent:      #e8b4a0;
+  --color-accent-deep: #b76e79;
+  --color-accent-ink:  #6d3b42;
+
+  /* ── Paper: the login, lobby and results pages ─────────────────────── */
+  --color-paper:       #f7efe2;
+  --color-paper-2:     #ecdfc9;
+  --color-paper-edge:  #d3bfa2;
+  --color-ink:         #16264a;
+  --color-ink-soft:    #4a5a7d;
 
   --font-mono: ui-monospace, "SF Mono", "Cascadia Mono", Menlo, Consolas, monospace;
 }
@@ -27,22 +44,47 @@ body {
   font-size: 14px;
 }
 
+/* A very slow navy wash so the ground has depth rather than reading as flat. */
+body::before {
+  content: "";
+  position: fixed;
+  inset: 0;
+  pointer-events: none;
+  z-index: -1;
+  background:
+    radial-gradient(120% 80% at 12% -10%, #16305e 0%, transparent 55%),
+    radial-gradient(90% 70% at 100% 0%, #2a1c39 0%, transparent 50%);
+  opacity: 0.85;
+}
+
 /* Numbers must not jitter while they tick. */
 .num { font-variant-numeric: tabular-nums; font-feature-settings: "tnum"; }
 
-/* Brief flash on a price change. Keyed on the value so React remounts it. */
-@keyframes flash-up   { 0% { background-color: color-mix(in oklab, var(--color-up) 28%, transparent); } 100% { background-color: transparent; } }
-@keyframes flash-down { 0% { background-color: color-mix(in oklab, var(--color-down) 28%, transparent); } 100% { background-color: transparent; } }
+/* Brief flash on a price change. */
+@keyframes flash-up   { 0% { background-color: color-mix(in oklab, var(--color-up) 30%, transparent); } 100% { background-color: transparent; } }
+@keyframes flash-down { 0% { background-color: color-mix(in oklab, var(--color-down) 30%, transparent); } 100% { background-color: transparent; } }
 .flash-up   { animation: flash-up   700ms ease-out; }
 .flash-down { animation: flash-down 700ms ease-out; }
 
-@media (prefers-reduced-motion: reduce) {
-  .flash-up, .flash-down { animation: none; }
-}
-
 @keyframes marquee { from { transform: translateX(0); } to { transform: translateX(-50%); } }
 .marquee { animation: marquee 45s linear infinite; }
-@media (prefers-reduced-motion: reduce) { .marquee { animation: none; } }
+
+@media (prefers-reduced-motion: reduce) {
+  .flash-up, .flash-down, .marquee { animation: none; }
+}
+
+/* ── Glass ──────────────────────────────────────────────────────────────
+   Only earns its place over the gradient wash above, where there is
+   genuinely something to blur. Over a flat panel it is just grey. */
+.glass {
+  background: color-mix(in oklab, var(--color-surface) 72%, transparent);
+  backdrop-filter: blur(14px) saturate(150%);
+  -webkit-backdrop-filter: blur(14px) saturate(150%);
+  border-bottom: 1px solid color-mix(in oklab, var(--color-border) 80%, transparent);
+}
+@supports not (backdrop-filter: blur(1px)) {
+  .glass { background: var(--color-surface); }
+}
 
 ::-webkit-scrollbar { width: 10px; height: 10px; }
 ::-webkit-scrollbar-track { background: var(--color-bg); }
@@ -52,4 +94,97 @@ input, select, textarea, button { font: inherit; }
 input:focus-visible, select:focus-visible, textarea:focus-visible, button:focus-visible {
   outline: 2px solid var(--color-accent);
   outline-offset: 1px;
+}
+
+/* ══════════════════════════════════════════════════════════════════════
+   PAPER
+   For the screens with no live data — sign-in, the pre-market lobby and the
+   results page. These are the moments people photograph, so they carry the
+   Bluechip identity. No paper anywhere a changing number has to be read.
+   ══════════════════════════════════════════════════════════════════════ */
+
+.paper-page {
+  color: var(--color-ink);
+  background-color: var(--color-paper);
+  /* Fibre grain, generated rather than fetched so there is no image request. */
+  /* Grain kept light: at high opacity the noise desaturates the cream to grey. */
+  background-image:
+    url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='240' height='240'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='3'/%3E%3CfeColorMatrix type='saturate' values='0'/%3E%3C/filter%3E%3Crect width='240' height='240' filter='url(%23n)' opacity='0.16'/%3E%3C/svg%3E"),
+    radial-gradient(100% 70% at 18% -5%, #fffdf6 0%, transparent 62%),
+    radial-gradient(85% 65% at 105% 105%, #e6d2b4 0%, transparent 58%),
+    linear-gradient(180deg, #f9f2e6 0%, #f2e7d6 100%);
+  background-blend-mode: multiply, screen, multiply, normal;
+}
+
+.paper-page ::selection { background: var(--color-accent); color: var(--color-ink); }
+
+/* A torn-edged card, taped down and sitting very slightly off-square. */
+.paper-card {
+  position: relative;
+  background: #fffdf8;
+  color: var(--color-ink);
+  box-shadow:
+    0 1px 0 rgba(120, 90, 55, 0.06),
+    0 18px 34px -18px rgba(60, 45, 30, 0.5);
+  /* Irregular edge. Deliberately not symmetric — a straight tear looks fake. */
+  clip-path: polygon(
+    0% 3.2%, 4% 0.8%, 11% 2.6%, 19% 0.6%, 28% 2.4%, 37% 0.5%, 47% 2.5%, 56% 0.7%,
+    66% 2.6%, 75% 0.6%, 84% 2.4%, 92% 0.7%, 100% 2.6%,
+    98.6% 15%, 100% 28%, 98.5% 41%, 100% 55%, 98.7% 68%, 100% 82%, 98.6% 97%,
+    92% 99.3%, 84% 97.4%, 75% 99.4%, 65% 97.5%, 55% 99.3%, 45% 97.4%,
+    35% 99.4%, 26% 97.5%, 17% 99.3%, 8% 97.6%, 0% 99.2%,
+    1.4% 84%, 0% 70%, 1.5% 56%, 0% 42%, 1.3% 29%, 0% 16%
+  );
+}
+
+.paper-card::after {
+  /* Warm edge burn, so the tear reads as depth rather than as a clip. */
+  content: "";
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  box-shadow: inset 0 0 0 1px rgba(120, 96, 64, 0.10),
+              inset 0 0 34px rgba(150, 118, 74, 0.16);
+}
+
+.paper-tape {
+  position: absolute;
+  top: -0.65rem;
+  left: 50%;
+  width: 5.5rem;
+  height: 1.5rem;
+  transform: translateX(-50%) rotate(-2.2deg);
+  background: color-mix(in oklab, var(--color-accent) 55%, #ffffff);
+  opacity: 0.75;
+  box-shadow: 0 1px 3px rgba(22, 38, 74, 0.18);
+}
+.paper-tape::before,
+.paper-tape::after {
+  content: "";
+  position: absolute;
+  top: 0;
+  width: 0.4rem;
+  height: 100%;
+  background: inherit;
+}
+.paper-tape::before { left: -0.35rem; clip-path: polygon(100% 0, 0 22%, 100% 44%, 0 68%, 100% 100%); }
+.paper-tape::after  { right: -0.35rem; clip-path: polygon(0 0, 100% 22%, 0 44%, 100% 68%, 0 100%); }
+
+.tilt-l { transform: rotate(-1.8deg); }
+.tilt-r { transform: rotate(1.5deg); }
+
+/* Display type for the paper screens. Condensed, heavy, letterspaced. */
+.display {
+  font-weight: 800;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--color-ink);
+}
+
+.paper-underline {
+  background-image: linear-gradient(transparent 62%, color-mix(in oklab, var(--color-accent) 70%, transparent) 62%);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .tilt-l, .tilt-r { transform: none; }
 }

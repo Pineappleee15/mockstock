@@ -2,18 +2,28 @@ import { redirect } from "next/navigation";
 import { currentActor } from "@/lib/auth";
 import { AdminLoginForm } from "./admin-login-form";
 
+export const dynamic = "force-dynamic";
+
 export default async function AdminLoginPage() {
   const actor = await currentActor();
   if (actor?.kind === "admin") redirect("/admin");
 
   return (
-    <main className="mx-auto flex min-h-screen max-w-sm flex-col justify-center px-5 py-10">
-      <div className="mb-8">
-        <div className="text-2xl font-bold tracking-tight">
-          Mock<span className="text-accent">Stock</span> <span className="text-muted">admin</span>
+    <main className="paper-page flex min-h-screen flex-col items-center justify-center px-5 py-12">
+      <div className="w-full max-w-sm">
+        <header className="mb-6 text-center">
+          <h1 className="display text-3xl">
+            Mock<span className="paper-underline">Stock</span>
+          </h1>
+          <p className="mt-1 text-[11px] font-semibold uppercase tracking-[0.3em] text-[var(--color-ink-soft)]">
+            Control room
+          </p>
+        </header>
+        <div className="paper-card tilt-r px-6 py-7">
+          <span className="paper-tape" aria-hidden />
+          <AdminLoginForm />
         </div>
       </div>
-      <AdminLoginForm />
     </main>
   );
 }

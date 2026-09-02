@@ -23,7 +23,7 @@ export default async function AdminLayout({ children }: { children: React.ReactN
 
   return (
     <div className="min-h-screen">
-      <header className="sticky top-0 z-20 border-b border-border bg-bg/95 backdrop-blur">
+      <header className="glass sticky top-0 z-20">
         <div className="mx-auto flex max-w-7xl items-center justify-between px-3 py-2">
           <Link href="/admin" className="text-sm font-bold">
             Mock<span className="text-accent">Stock</span> <span className="text-muted">admin</span>

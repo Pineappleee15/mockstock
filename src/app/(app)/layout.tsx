@@ -40,10 +40,11 @@ export default async function AppLayout({ children }: { children: React.ReactNod
 
   return (
     <div className="flex min-h-screen flex-col">
-      <header className="sticky top-0 z-20 border-b border-border bg-bg/95 backdrop-blur">
+      <header className="glass sticky top-0 z-20">
         <div className="mx-auto flex max-w-6xl items-center justify-between gap-3 px-3 py-2">
           <div className="flex min-w-0 items-center gap-3">
-            <Link href="/dashboard" className="shrink-0 text-sm font-bold tracking-tight">
+            <Link href="/dashboard"
+              className="shrink-0 text-sm font-bold tracking-[0.02em] text-text">
               Mock<span className="text-accent">Stock</span>
             </Link>
             {comp && <MarketState state={comp.state} />}
