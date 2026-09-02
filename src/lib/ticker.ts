@@ -5,11 +5,10 @@ import {
 import { computeTick, pullbackBps, newsSchedule } from "./engine";
 import type { EngineConfig, EngineStock, StockState } from "./engine-types";
 import { recomputeLeaderboard, archiveLeaderboard } from "./leaderboard";
+import { ticksDue, MAX_CATCHUP_TICKS } from "./tick-clock";
 import { audit } from "./audit";
 
 const ARCHIVE_EVERY_SECONDS = 300;
-/** Cap on catch-up replay after a restart, so a week-old dev DB doesn't hang boot. */
-const MAX_CATCHUP_TICKS = 240;
 
 export function configOf(c: typeof competitions.$inferSelect): EngineConfig {
   return {
@@ -219,18 +218,26 @@ export function startTicker(): void {
       const live = await db.query.competitions.findFirst({ where: eq(competitions.state, "open") });
       if (!live) return;
 
-      // How many whole intervals have elapsed since the last tick. Zero means
-      // it is not time yet — this MUST NOT be floored up to 1, or the poll
-      // frequency becomes the tick rate and the configured interval is ignored
-      // (which also inflates realised volatility, since sigma is scaled by the
-      // configured interval, not by how often we actually ticked).
       const now = Date.now();
-      const last = live.lastTickAt?.getTime() ?? now;
-      const intervalMs = live.tickIntervalSeconds * 1000;
-      const due = Math.min(MAX_CATCHUP_TICKS, Math.floor((now - last) / intervalMs));
-      if (due <= 0) return;
+      const plan = ticksDue(live.lastTickAt, now, live.tickIntervalSeconds);
+      if (plan.due <= 0) return;
 
-      for (let i = 0; i < due; i++) {
+      if (plan.skipped > 0) {
+        // The market was left open while nothing was ticking — the process was
+        // asleep (Render's free tier stops after 15 idle minutes), not merely
+        // busy. Move the clock forward before replaying, otherwise every poll
+        // replays the cap and never catches up, churning through days of
+        // invented price history for a market nobody could trade in.
+        await db.update(competitions)
+          .set({ lastTickAt: new Date(now - MAX_CATCHUP_TICKS * live.tickIntervalSeconds * 1000) })
+          .where(eq(competitions.id, live.id));
+        console.warn(
+          `[ticker] market was open but idle for ${Math.round(plan.gapSeconds / 60)} minutes; ` +
+          `skipped ${plan.skipped} ticks and resumed from the last ${MAX_CATCHUP_TICKS}`,
+        );
+      }
+
+      for (let i = 0; i < plan.due; i++) {
         const res = await runOneTick(live.id);
         if (!res.ticked) break;
       }
