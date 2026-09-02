@@ -13,6 +13,8 @@ import { formatRupees } from "@/lib/money";
 export function PriceChart({
   series, openPaise, up,
 }: { series: Array<{ t: number; p: number }>; openPaise: number; up: boolean }) {
+  // Negative tick indices are pre-open history; zero is the opening bell.
+  const hasHistory = series.some((d) => d.t < 0);
   if (series.length < 2) {
     return <div className="flex h-56 items-center justify-center text-sm text-muted">Waiting for prices…</div>;
   }
@@ -41,6 +43,15 @@ export function PriceChart({
             axisLine={false} tickLine={false}
           />
           <ReferenceLine y={openPaise} stroke="var(--color-border)" strokeDasharray="3 3" />
+          {hasHistory && (
+            <ReferenceLine
+              x={0}
+              stroke="var(--color-accent)"
+              strokeOpacity={0.55}
+              strokeDasharray="2 3"
+              label={{ value: "open", position: "insideTopLeft", fill: "var(--color-accent)", fontSize: 10 }}
+            />
+          )}
           <Tooltip
             contentStyle={{
               background: "var(--color-surface-2)", border: "1px solid var(--color-border)",

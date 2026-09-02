@@ -35,9 +35,13 @@ async function main() {
   // >= rather than ==: if the dev server is running it has its own ticker on the
   // same competition, which legitimately advances the clock alongside this script.
   check("tick advanced by at least 10", after.currentTick >= 10, `tick=${after.currentTick}`);
-  const ticks = await db.select().from(priceTicks).where(eq(priceTicks.stockId, tcs.id));
-  check("a tick row exists for every tick", ticks.length === after.currentTick + 1,
+  // Negative tick indices are pre-open history, so count only the live session.
+  const allRows = await db.select().from(priceTicks).where(eq(priceTicks.stockId, tcs.id));
+  const ticks = allRows.filter((t) => t.tickIndex >= 0);
+  const history = allRows.filter((t) => t.tickIndex < 0);
+  check("a tick row exists for every live tick", ticks.length === after.currentTick + 1,
     `rows=${ticks.length} tick=${after.currentTick}`);
+  check("pre-open history was generated", history.length === 60, `days=${history.length}`);
   const prices = ticks.sort((a, b) => a.tickIndex - b.tickIndex).map((t) => t.pricePaise);
   check("prices actually moved", new Set(prices).size > 1);
   check("all prices positive integers", prices.every((p) => Number.isInteger(p) && p > 0));

@@ -1,10 +1,11 @@
 import { and, eq, sql } from "drizzle-orm";
 import {
   db, competitions, stocks, priceTicks, priceAdjustments, newsEvents, newsEventStocks,
-  trades, portfolios, holdings, cashAdjustments,
+  trades, portfolios, holdings, cashAdjustments, type Conn,
 } from "@/db";
 import { audit } from "./audit";
 import { recomputeLeaderboard } from "./leaderboard";
+import { priceHistory } from "./fundamentals";
 
 type Admin = { kind: "admin"; id: number; label: string };
 
@@ -290,4 +291,35 @@ export async function adjustCash(
       payload: { amountPaise, reason, cashAfter: after }, tx,
     });
   });
+}
+
+/**
+ * Write a stock's pre-open price history.
+ *
+ * Stored as price_ticks at NEGATIVE tick indices, which needs no schema change
+ * and keeps "before the bell" naturally separate from the live session: the
+ * session clock starts at zero, so change-since-open and the circuit breaker
+ * are unaffected by anything here.
+ */
+export async function writeStockHistory(
+  tx: Conn, competitionId: number, stock: typeof stocks.$inferSelect, days = 60,
+): Promise<void> {
+  const series = priceHistory(
+    competitionId, stock.symbol, stock.startingPricePaise,
+    stock.volatilityBps, stock.driftBps, days,
+  );
+
+  // series ends on the opening price; that value is tick 0, written at open.
+  const rows = series.slice(0, -1).map((price, i) => ({
+    competitionId,
+    stockId: stock.id,
+    tickIndex: -(days - i),
+    pricePaise: price,
+    anchorPaise: price,
+    gapBps: 0,
+    netQty: 0,
+    halted: false,
+  }));
+
+  if (rows.length) await tx.insert(priceTicks).values(rows).onConflictDoNothing();
 }

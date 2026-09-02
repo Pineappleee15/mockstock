@@ -3,6 +3,8 @@ import { hash } from "@node-rs/argon2";
 import { eq } from "drizzle-orm";
 import { db, sql as pg, competitions, stocks, teams, portfolios, admins } from "../src/db";
 import { seedFromString } from "../src/lib/rng";
+import { driftFor } from "../src/lib/fundamentals";
+import { writeStockHistory } from "../src/lib/market";
 import { rupeesToPaise } from "../src/lib/money";
 import { DEMO_STOCKS, DEMO_TEAMS } from "./stocks-demo";
 
@@ -68,7 +70,7 @@ async function main() {
 
   console.log(`  competition #${comp!.id}: ${comp!.name}`);
 
-  await db.insert(stocks).values(DEMO_STOCKS.map((s) => {
+  const insertedStocks = await db.insert(stocks).values(DEMO_STOCKS.map((s) => {
     const pricePaise = rupeesToPaise(s.price);
     return {
       competitionId: comp!.id,
@@ -77,12 +79,14 @@ async function main() {
       sector: s.sector,
       startingPricePaise: pricePaise,
       volatilityBps: s.volBps,
-      driftBps: 0,
+      driftBps: driftFor(comp!.id, s.symbol),
       liquidity: Math.max(10, Math.round(LIQUIDITY_NOTIONAL_PAISE / pricePaise)),
       seed: seedFromString(`${comp!.id}:${s.symbol}`) % 2_000_000_000,
     };
-  }));
-  console.log(`  ${DEMO_STOCKS.length} stocks`);
+  })).returning();
+
+  for (const row of insertedStocks) await writeStockHistory(db, comp!.id, row);
+  console.log(`  ${DEMO_STOCKS.length} stocks, each with 60 days of history`);
 
   const teamRows = await db.insert(teams).values(DEMO_TEAMS.map((t, i) => ({
     competitionId: comp!.id,

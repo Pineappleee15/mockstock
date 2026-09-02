@@ -257,13 +257,15 @@ export async function tradeHistory(teamId: number, limit = 200): Promise<TradeRo
 export async function priceSeries(
   comp: LiveCompetition, stockId: number, points = 180,
 ): Promise<Array<{ t: number; p: number }>> {
+  // Pre-open history lives at negative tick indices. It is short, so it is
+  // returned whole; only the live session is downsampled.
   const span = Math.max(1, Math.ceil((comp.currentTick + 1) / points));
   const rows = await db.select({ t: priceTicks.tickIndex, p: priceTicks.pricePaise })
     .from(priceTicks)
     .where(and(
       eq(priceTicks.competitionId, comp.id),
       eq(priceTicks.stockId, stockId),
-      sql`${priceTicks.tickIndex} % ${span} = 0`,
+      sql`(${priceTicks.tickIndex} < 0 OR ${priceTicks.tickIndex} % ${span} = 0)`,
     ))
     .orderBy(priceTicks.tickIndex);
 

@@ -6,12 +6,15 @@ import { Card, Change, Badge, Empty } from "@/components/ui";
 import { LivePrice } from "@/components/price";
 import { PriceChart } from "@/components/price-chart";
 import { TradePanel } from "@/components/trade-panel";
+import { FundamentalsCard } from "@/components/fundamentals-card";
 import type { MarketRow, PortfolioView } from "@/lib/queries";
+import type { Fundamentals } from "@/lib/fundamentals";
 
 interface Props {
   symbol: string; name: string; sector: string;
   spreadBps: number; brokerageBps: number; concentrationCapBps: number;
   tradingOpen: boolean;
+  fundamentals: Fundamentals;
 }
 
 interface ChartPayload {
@@ -73,6 +76,12 @@ export function StockDetail(props: Props) {
           </div>
         </Card>
       )}
+
+      <FundamentalsCard
+        f={props.fundamentals}
+        pricePaise={row.pricePaise}
+        sector={props.sector}
+      />
 
       <TradePanel
         symbol={props.symbol}

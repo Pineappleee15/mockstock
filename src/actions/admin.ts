@@ -8,10 +8,11 @@ import { db, competitions, stocks, teams, portfolios } from "@/db";
 import { requireAdmin, generateJoinCode, hashPassword } from "@/lib/auth";
 import { audit } from "@/lib/audit";
 import { seedFromString } from "@/lib/rng";
+import { driftFor } from "@/lib/fundamentals";
 import { rupeesToPaise } from "@/lib/money";
 import {
   openMarket, setMarketState, resumeMarket, haltStock, unhaltStock,
-  overridePrice, publishNews, voidTrade, adjustCash,
+  overridePrice, publishNews, voidTrade, adjustCash, writeStockHistory,
 } from "@/lib/market";
 import { invalidate } from "@/lib/cache";
 import baseline from "@/data/universe.json";
@@ -254,16 +255,21 @@ export async function importStocks(competitionId: number, form: FormData): Promi
     for (const r of rows) {
       const pricePaise = rupeesToPaise(r.price);
       try {
-        await db.insert(stocks).values({
+        const [row] = await db.insert(stocks).values({
           competitionId, symbol: r.symbol, name: r.name, sector: r.sector,
           startingPricePaise: pricePaise,
           volatilityBps: Number.isFinite(r.volBps) && r.volBps > 0 ? Math.round(r.volBps) : 50,
-          driftBps: Number.isFinite(r.driftBps) ? Math.round(r.driftBps) : 0,
+          // Zero drift would mean nothing to analyse, so an unspecified drift
+          // is derived from the competition and symbol rather than left flat.
+          driftBps: Number.isFinite(r.driftBps) && r.driftBps !== 0
+            ? Math.round(r.driftBps)
+            : driftFor(competitionId, r.symbol),
           liquidity: r.liquidity > 0
             ? Math.round(r.liquidity)
             : Math.max(10, Math.round(LIQUIDITY_NOTIONAL_PAISE / pricePaise)),
           seed: seedFromString(`${competitionId}:${r.symbol}`) % 2_000_000_000,
-        });
+        }).returning();
+        await writeStockHistory(db, competitionId, row!);
         created++;
       } catch {
         skipped.push(r.symbol);
@@ -527,7 +533,7 @@ export async function loadStandardUniverse(competitionId: number): Promise<Actio
           sector: s.sector,
           startingPricePaise: pricePaise,
           volatilityBps: s.volBps,
-          driftBps: 0,
+          driftBps: driftFor(competitionId, s.symbol),
           liquidity: Math.max(10, Math.round(notionalFor(s.sector) / pricePaise)),
           seed: seedFromString(`${competitionId}:${s.symbol}`) % 2_000_000_000,
         };
@@ -537,7 +543,9 @@ export async function loadStandardUniverse(competitionId: number): Promise<Actio
       return { ok: true, message: `All ${baseline.stocks.length} standard stocks are already loaded.` };
     }
 
-    await db.insert(stocks).values(toInsert);
+    const inserted = await db.insert(stocks).values(toInsert).returning();
+    for (const row of inserted) await writeStockHistory(db, competitionId, row);
+
     await audit(admin, "stocks.load_standard", {
       competitionId,
       payload: { added: toInsert.length, skipped: baseline.stocks.length - toInsert.length },

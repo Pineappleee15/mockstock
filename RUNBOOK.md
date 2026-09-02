@@ -138,6 +138,31 @@ Check the tick counter on the admin dashboard.
    there is no gap in the charts and no lost news event. Nothing is lost by restarting.
 3. Still stuck? Check the server logs for `[ticker] cycle failed`.
 
+### What teams have to analyse
+
+Trading is not only about waiting for news. Each stock carries a hidden **drift**
+— roughly -5 to +5 basis points a minute — assigned from the competition id and
+the symbol, so it is fixed for an event and different in the next one. Nothing
+about it is visible directly.
+
+What participants can see is derived from it honestly:
+
+- **60 days of price history** on the chart, before the opening bell. A stock
+  that is going to trend up has visibly been trending up.
+- **A fundamentals card** — revenue growth, profit margin, P/E, debt to equity,
+  beta, 52-week range. Growth and debt track drift closely; beta tracks
+  volatility, not quality.
+- **An analyst target and rating**, which is drift seen through a cloudier lens:
+  right more often than not, wrong often enough to be worth a second opinion.
+
+Simulated over 400 three-hour events, a team that buys the three highest-growth
+stocks beats a team picking at random by about **7 percentage points**, and wins
+roughly **85% of the time**. So the research pays without making the event a
+solved puzzle. Run `npx tsx scripts/signal-sim.ts` to re-check this after any
+tuning.
+
+The drift is never sent to the browser. Working it out is the exercise.
+
 ### How many stocks to run
 
 Not as many as you think. Team trading is the primary price driver, so the
