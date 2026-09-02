@@ -5,6 +5,8 @@ import {
 } from "@/db";
 import { returnBps } from "./money";
 
+export { marketIndex, INDEX_BASE, type MarketIndex } from "./market-index";
+
 export type LiveCompetition = typeof competitions.$inferSelect;
 
 /** The one competition that is live, or the most recent one if none is. */

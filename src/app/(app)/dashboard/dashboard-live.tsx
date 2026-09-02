@@ -5,16 +5,23 @@ import { usePoll } from "@/lib/use-poll";
 import { Card, Stat, Change, Money, Badge, Empty } from "@/components/ui";
 import { LivePrice } from "@/components/price";
 import { formatRupees } from "@/lib/money";
-import type { PortfolioView, MarketRow } from "@/lib/queries";
+import type { PortfolioView, MarketRow, MarketIndex } from "@/lib/queries";
+import { Lobby, type LobbyRules } from "@/components/lobby";
 
 type Payload = PortfolioView & { tick: number; state: string };
 
-export function DashboardLive() {
+export function DashboardLive({ rules }: { rules: LobbyRules | null }) {
   const { data, loading, error } = usePoll<Payload>("/api/portfolio", 5000);
-  const { data: market } = usePoll<{ stocks: MarketRow[] }>("/api/market", 5000);
+  const { data: market } = usePoll<{ stocks: MarketRow[]; index: MarketIndex }>("/api/market", 5000);
 
   if (loading && !data) return <Empty>Loading your portfolio…</Empty>;
   if (!data) return <Empty>{error ? "Could not load your portfolio." : "No portfolio yet."}</Empty>;
+
+  // Before the first bell, a portfolio of zeroes tells a team nothing. Once the
+  // market has opened even once, the real dashboard is the useful view — closing
+  // or pausing later should not throw them back to a waiting room.
+  const neverOpened = data.state === "draft" || data.state === "pre_open";
+  if (neverOpened && rules) return <Lobby teamName={data.teamName} rules={rules} />;
 
   const rankMove = data.prevRank != null && data.rank != null ? data.prevRank - data.rank : 0;
 
@@ -46,10 +53,19 @@ export function DashboardLive() {
           sub={<>fees paid {formatRupees(data.brokeragePaidPaise)}</>} />
       </div>
 
-      <div className="grid grid-cols-2 gap-2 sm:grid-cols-3">
+      <div className="grid grid-cols-2 gap-2 sm:grid-cols-4">
         <Stat label="Realised P&L" value={<Money paise={data.realisedPnlPaise} sign />} />
         <Stat label="Unrealised P&L" value={<Money paise={data.unrealisedPnlPaise} sign />} />
         <Stat label="Trades" value={<span className="num">{data.tradeCount}</span>} />
+        {market?.index && (
+          <Stat
+            label="Alpha vs market"
+            tone={data.returnBps - market.index.returnBps > 0 ? "up"
+              : data.returnBps - market.index.returnBps < 0 ? "down" : "neutral"}
+            value={<Change bps={data.returnBps - market.index.returnBps} />}
+            sub={<>market {market.index.returnBps > 0 ? "+" : ""}{(market.index.returnBps / 100).toFixed(2)}%</>}
+          />
+        )}
       </div>
 
       <Card>

@@ -6,12 +6,12 @@ import { usePoll } from "@/lib/use-poll";
 import { Card, Change, Badge, Empty, Input, Select, Button } from "@/components/ui";
 import { LivePrice, Spark } from "@/components/price";
 import { WatchStar } from "@/components/watch-star";
-import type { MarketRow, PortfolioView } from "@/lib/queries";
+import type { MarketRow, PortfolioView, MarketIndex } from "@/lib/queries";
 
 type SortKey = "symbol" | "price" | "change";
 
 export function MarketLive() {
-  const { data, loading } = usePoll<{ tick: number; state: string; stocks: MarketRow[] }>("/api/market", 5000);
+  const { data, loading } = usePoll<{ tick: number; state: string; stocks: MarketRow[]; index: MarketIndex }>("/api/market", 5000);
   // Starred symbols are per team, so they arrive on the portfolio poll rather
   // than on the shared, cached market payload.
   const { data: pf } = usePoll<PortfolioView>("/api/portfolio", 5000);
@@ -67,6 +67,21 @@ export function MarketLive() {
 
   return (
     <div className="space-y-3">
+      {data?.index && (
+        <Card className="flex flex-wrap items-baseline justify-between gap-x-4 gap-y-1 px-3 py-2">
+          <div className="flex items-baseline gap-2">
+            <span className="text-[11px] font-semibold uppercase tracking-[0.16em] text-muted">
+              Bluechip {data.index.constituents}
+            </span>
+            <span className="num text-lg font-semibold">{data.index.value.toFixed(2)}</span>
+            <Change bps={data.index.returnBps} className="text-sm" />
+          </div>
+          <span className="text-[11px] text-muted">
+            Equal-weighted, from the session open. Beat this and you have alpha.
+          </span>
+        </Card>
+      )}
+
       <div className="flex flex-wrap gap-2">
         <Input
           value={q} onChange={(e) => setQ(e.target.value)}

@@ -3,21 +3,29 @@
 import { usePoll } from "@/lib/use-poll";
 import { Card, Change, Empty, Badge } from "@/components/ui";
 import { formatRupees, formatCompact } from "@/lib/money";
-import type { LeaderRow } from "@/lib/queries";
+import type { LeaderRow, MarketIndex } from "@/lib/queries";
 
 export function LeaderboardLive() {
-  const { data, loading } = usePoll<{ tick: number; frozen: boolean; rows: LeaderRow[] }>(
-    "/api/leaderboard", 5000,
-  );
+  const { data, loading } = usePoll<{
+    tick: number; frozen: boolean; rows: LeaderRow[]; index: MarketIndex;
+  }>("/api/leaderboard", 5000);
 
   if (loading && !data) return <Empty>Loading the leaderboard…</Empty>;
   const rows = data?.rows ?? [];
 
   return (
     <div className="space-y-3">
-      <div className="flex items-center justify-between">
+      <div className="flex flex-wrap items-center justify-between gap-2">
         <h1 className="text-lg font-semibold">Leaderboard</h1>
-        {data?.frozen && <Badge tone="warn">Final</Badge>}
+        <div className="flex items-center gap-3">
+          {data?.index && (
+            <span className="text-xs text-muted">
+              Market <span className="num">{data.index.value.toFixed(2)}</span>{" "}
+              <Change bps={data.index.returnBps} />
+            </span>
+          )}
+          {data?.frozen && <Badge tone="warn">Final</Badge>}
+        </div>
       </div>
 
       <Card>
@@ -30,6 +38,7 @@ export function LeaderboardLive() {
               <th className="px-3 py-2 text-right font-medium">Cash</th>
               <th className="px-3 py-2 text-right font-medium">Invested</th>
               <th className="px-3 py-2 text-right font-medium">Return</th>
+              <th className="px-3 py-2 text-right font-medium">Alpha</th>
               <th className="px-3 py-2 text-right font-medium">Trades</th>
             </tr>
           </thead>
@@ -45,6 +54,9 @@ export function LeaderboardLive() {
                 <td className="num px-3 py-2 text-right text-muted">{formatRupees(r.cashPaise)}</td>
                 <td className="num px-3 py-2 text-right text-muted">{formatRupees(r.investedPaise)}</td>
                 <td className="px-3 py-2 text-right"><Change bps={r.returnBps} /></td>
+                <td className="px-3 py-2 text-right">
+                  <Change bps={r.returnBps - (data?.index?.returnBps ?? 0)} />
+                </td>
                 <td className="num px-3 py-2 text-right text-muted">{r.tradeCount}</td>
               </tr>
             ))}
@@ -77,6 +89,8 @@ export function LeaderboardLive() {
 
       <p className="text-center text-[11px] text-muted">
         Updates every 5 seconds. Ties broken by realised P&amp;L, then fewer trades.
+        Alpha is your return less the market&apos;s, so it ranks the same but shows whether you
+        beat the market or just rode it.
       </p>
     </div>
   );

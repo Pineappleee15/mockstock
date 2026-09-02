@@ -1,5 +1,5 @@
 import { NextResponse } from "next/server";
-import { activeCompetition, marketSnapshot } from "@/lib/queries";
+import { activeCompetition, marketSnapshot, marketIndex } from "@/lib/queries";
 import { cached, etagFor, notModified } from "@/lib/cache";
 import { ensureTicker } from "@/lib/boot";
 
@@ -17,7 +17,7 @@ export async function GET(req: Request) {
   const stocks = await cached("market", key, () => marketSnapshot(comp));
 
   return NextResponse.json(
-    { tick: comp.currentTick, state: comp.state, name: comp.name, stocks },
+    { tick: comp.currentTick, state: comp.state, name: comp.name, stocks, index: marketIndex(stocks) },
     { headers: { ETag: etag, "Cache-Control": "no-cache" } },
   );
 }
