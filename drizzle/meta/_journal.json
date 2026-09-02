@@ -15,6 +15,13 @@
       "when": 1788347105078,
       "tag": "0001_large_klaw",
       "breakpoints": true
+    },
+    {
+      "idx": 2,
+      "version": "7",
+      "when": 1788371157714,
+      "tag": "0002_pink_vivisector",
+      "breakpoints": true
     }
   ]
 }

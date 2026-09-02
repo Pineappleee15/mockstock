@@ -138,6 +138,42 @@ Check the tick counter on the admin dashboard.
    there is no gap in the charts and no lost news event. Nothing is lost by restarting.
 3. Still stuck? Check the server logs for `[ticker] cycle failed`.
 
+### Making the session feel alive
+
+If the market feels flat and news is the only thing that visibly moves it, the
+cause is usually one of three, in this order:
+
+1. **Market regimes are off.** Settings -> Market mood. Without them every stock
+   moves independently, nothing ever falls or recovers together, and the session
+   is three hours of stationary noise. With them the market has phases — quiet,
+   choppy, selling off, the occasional panic — changing every few minutes, and
+   volatility runs higher around the open and into the close. Each stock feels
+   the shared move through its own beta, which is the same beta printed on its
+   fundamentals card.
+
+2. **Order flow is too weak for a small room.** Per-stock liquidity is
+   calibrated for a crowd. With ten or twelve teams the whole room piling into
+   one stock moves it barely one percent. Drop the **liquidity multiplier** to
+   5000 (half) or 3000, and team trading starts to bite.
+
+3. **Volatility is simply low.** The volatility multiplier is a blunt instrument
+   and it works. 15000 to 20000 makes everything livelier.
+
+Defaults give roughly a **20% average swing** across a three-hour session, with
+the best stock up about 30% and the worst down about 25%. Preview any settings
+before an event without touching the database:
+
+```bash
+npx tsx scripts/session-preview.ts 1 10000 6000
+```
+
+That prints the regime timeline, the shocks, and the closing spread for
+competition 1 at 1.0x volatility and a 6000 market factor.
+
+**Watch the circuit limit.** A 20% limit against a 20% average swing will halt a
+lot of stocks. If you turn the chaos up, raise the circuit limit to 30-35% or
+you will spend the event pressing Resume.
+
 ### What teams have to analyse
 
 Trading is not only about waiting for news. Each stock carries a hidden **drift**

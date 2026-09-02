@@ -68,6 +68,10 @@ const configSchema = z.object({
   maxImpactBpsPerTick: z.coerce.number().int().min(0).max(5000),
   gapHalflifeSeconds: z.coerce.number().int().min(1).max(86400),
   permanentImpactBps: z.coerce.number().int().min(0).max(10000),
+  regimeEnabled: z.coerce.boolean(),
+  marketFactorBps: z.coerce.number().int().min(0).max(30000),
+  liquidityMultiplierBps: z.coerce.number().int().min(500).max(100000),
+  shockChanceBps: z.coerce.number().int().min(0).max(500),
 });
 
 export async function updateCompetition(competitionId: number, form: FormData): Promise<ActionResult> {
@@ -88,6 +92,10 @@ export async function updateCompetition(competitionId: number, form: FormData): 
       maxImpactBpsPerTick: form.get("maxImpactBpsPerTick"),
       gapHalflifeSeconds: form.get("gapHalflifeSeconds"),
       permanentImpactBps: form.get("permanentImpactBps"),
+      regimeEnabled: form.get("regimeEnabled") === "on",
+      marketFactorBps: form.get("marketFactorBps"),
+      liquidityMultiplierBps: form.get("liquidityMultiplierBps"),
+      shockChanceBps: form.get("shockChanceBps"),
     });
     if (!parsed.success) {
       return { ok: false, error: parsed.error.issues.map((i) => `${i.path.join(".")}: ${i.message}`).join("; ") };

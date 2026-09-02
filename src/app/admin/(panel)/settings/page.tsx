@@ -17,5 +17,7 @@ export default async function SettingsPage() {
     orderFlowEnabled: comp.orderFlowEnabled, impactCoefficientBps: comp.impactCoefficientBps,
     maxImpactBpsPerTick: comp.maxImpactBpsPerTick, gapHalflifeSeconds: comp.gapHalflifeSeconds,
     permanentImpactBps: comp.permanentImpactBps,
+    regimeEnabled: comp.regimeEnabled, marketFactorBps: comp.marketFactorBps,
+    liquidityMultiplierBps: comp.liquidityMultiplierBps, shockChanceBps: comp.shockChanceBps,
   }} />;
 }

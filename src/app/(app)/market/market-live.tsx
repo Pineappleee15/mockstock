@@ -11,7 +11,7 @@ import type { MarketRow, PortfolioView, MarketIndex } from "@/lib/queries";
 type SortKey = "symbol" | "price" | "change";
 
 export function MarketLive() {
-  const { data, loading } = usePoll<{ tick: number; state: string; stocks: MarketRow[]; index: MarketIndex }>("/api/market", 5000);
+  const { data, loading } = usePoll<{ tick: number; state: string; stocks: MarketRow[]; index: MarketIndex; mood: string | null }>("/api/market", 5000);
   // Starred symbols are per team, so they arrive on the portfolio poll rather
   // than on the shared, cached market payload.
   const { data: pf } = usePoll<PortfolioView>("/api/portfolio", 5000);
@@ -75,6 +75,11 @@ export function MarketLive() {
             </span>
             <span className="num text-lg font-semibold">{data.index.value.toFixed(2)}</span>
             <Change bps={data.index.returnBps} className="text-sm" />
+            {data.mood && (
+              <span className="rounded bg-surface-2 px-2 py-0.5 text-[10px] font-bold uppercase tracking-[0.14em] text-muted">
+                {data.mood}
+              </span>
+            )}
           </div>
           <span className="text-[11px] text-muted">
             Equal-weighted, from the session open. Beat this and you have alpha.

@@ -49,7 +49,7 @@ function runEvent(compId: number) {
   for (const p of picks) {
     const stock: EngineStock = {
       id: 0, seed: seedFromString(`${compId}:${p.symbol}`) % 2_000_000_000,
-      volatilityBps: p.vol, driftBps: p.drift, liquidity: 1500,
+      volatilityBps: p.vol, driftBps: p.drift, liquidity: 1500, beta: 1,
       circuitLimitBps: null, sessionOpenPaise: null, halted: false,
     };
     let state = { pricePaise: p.price, anchorPaise: p.price, gapBps: 0 };

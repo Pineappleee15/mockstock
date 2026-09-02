@@ -13,7 +13,7 @@ export const marketState = pgEnum("market_state", [
 export const stockStatus = pgEnum("stock_status", ["active", "halted"]);
 export const orderSide = pgEnum("order_side", ["buy", "sell"]);
 export const orderStatus = pgEnum("order_status", ["filled", "rejected"]);
-export const adjustmentKind = pgEnum("adjustment_kind", ["news", "order_flow", "override"]);
+export const adjustmentKind = pgEnum("adjustment_kind", ["news", "order_flow", "override", "market", "shock"]);
 export const actorType = pgEnum("actor_type", ["admin", "team", "system"]);
 
 /* ────────────────────────────  identity  ──────────────────────────── */
@@ -52,6 +52,16 @@ export const competitions = pgTable("competitions", {
   maxImpactBpsPerTick: integer("max_impact_bps_per_tick").notNull().default(200),
   gapHalflifeSeconds: integer("gap_halflife_seconds").notNull().default(90),
   permanentImpactBps: integer("permanent_impact_bps").notNull().default(3000),
+
+  // Market regime: a common factor moving every stock together, in phases over
+  // the session. Without it stocks are independent and the market never has a
+  // mood — no shared panic, no recovery, no arc.
+  regimeEnabled: boolean("regime_enabled").notNull().default(true),
+  marketFactorBps: integer("market_factor_bps").notNull().default(6000),
+  /** Scales every stock's liquidity, so order flow can be made to bite harder. */
+  liquidityMultiplierBps: integer("liquidity_multiplier_bps").notNull().default(10000),
+  /** Chance per tick that a random stock takes an unexplained shock. */
+  shockChanceBps: integer("shock_chance_bps").notNull().default(15),
 
   currentTick: integer("current_tick").notNull().default(0),
   lastTickAt: timestamp("last_tick_at", { withTimezone: true }),

@@ -28,6 +28,19 @@ const STREAM = {
   analyst: 404,
 } as const;
 
+/**
+ * How hard a stock responds to a market-wide move.
+ *
+ * Exported because the price engine uses exactly this value, so the beta printed
+ * on the fundamentals card is the real one rather than a plausible-looking
+ * decoration. A high-beta stock genuinely swings harder when the market moves.
+ */
+export function betaFor(competitionId: number, symbol: string, volatilityBps: number): number {
+  const seed = hash32(competitionId, symbolSeed(symbol), STREAM.quality);
+  const jitter = (uniform(seed, 5, STREAM.quality) - 0.5) * 2 * 0.16;
+  return Math.round(Math.max(0.35, volatilityBps / 55 + jitter) * 100) / 100;
+}
+
 /** Per-minute drift for a stock in a given competition. Roughly -5..+5 bps. */
 export function driftFor(competitionId: number, symbol: string, spreadBps = 5): number {
   const seed = hash32(competitionId, symbolSeed(symbol), STREAM.drift);
@@ -124,7 +137,7 @@ export function fundamentalsFor(
   // call rather than a lookup: growth is priced in, but imperfectly.
   const peRatio = round1(22 + q * 14 + noise(3, 5));
   const debtToEquity = Math.max(0.05, round2(0.75 - q * 0.45 + noise(4, 0.18)));
-  const beta = round2(Math.max(0.35, (volatilityBps / 55) + noise(5, 0.16)));
+  const beta = betaFor(competitionId, symbol, volatilityBps);
 
   // Market cap is anchored to the share price but scaled by a seeded size
   // factor, so an expensive share is not automatically a huge company. Tuned to

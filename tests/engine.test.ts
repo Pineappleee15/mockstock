@@ -15,7 +15,7 @@ const cfg: EngineConfig = {
 };
 
 const stock: EngineStock = {
-  id: 1, seed: 12345, volatilityBps: 30, driftBps: 0, liquidity: 500,
+  id: 1, seed: 12345, volatilityBps: 30, driftBps: 0, liquidity: 500, beta: 1,
   circuitLimitBps: null, sessionOpenPaise: 100000, halted: false,
 };
 

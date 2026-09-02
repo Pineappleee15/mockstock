@@ -6,6 +6,8 @@ import { computeTick, pullbackBps, newsSchedule } from "./engine";
 import type { EngineConfig, EngineStock, StockState } from "./engine-types";
 import { recomputeLeaderboard, archiveLeaderboard } from "./leaderboard";
 import { ticksDue, MAX_CATCHUP_TICKS } from "./tick-clock";
+import { marketFactorBps, shockAt } from "./regime";
+import { betaFor } from "./fundamentals";
 import { audit } from "./audit";
 
 const ARCHIVE_EVERY_SECONDS = 300;
@@ -14,6 +16,7 @@ export function configOf(c: typeof competitions.$inferSelect): EngineConfig {
   return {
     tickIntervalSeconds: c.tickIntervalSeconds,
     volatilityMultiplierBps: c.volatilityMultiplierBps,
+    liquidityMultiplierBps: c.liquidityMultiplierBps,
     orderFlowEnabled: c.orderFlowEnabled,
     impactCoefficientBps: c.impactCoefficientBps,
     maxImpactBpsPerTick: c.maxImpactBpsPerTick,
@@ -70,6 +73,19 @@ export async function runOneTick(competitionId: number): Promise<{ ticked: boole
     // News increments landing on this tick.
     const newsDelta = await newsDeltasForTick(tx, competitionId, nextTick, comp.tickIntervalSeconds);
 
+    // One market move for the whole session, felt by each stock through its
+    // beta, plus the occasional unexplained jolt in a single name.
+    const sessionTicks = sessionLength(comp);
+    const factor = comp.regimeEnabled
+      ? marketFactorBps(comp.id, nextTick, comp.tickIntervalSeconds, sessionTicks, comp.marketFactorBps)
+      : null;
+    if (factor) cfg.regimeVolMultiplier = factor.regime.volMultiplier;
+
+    const shock = comp.regimeEnabled
+      ? shockAt(comp.id, nextTick, allStocks.length, comp.shockChanceBps)
+      : null;
+    const shockedStockId = shock ? allStocks[shock.stockIndex]?.id : undefined;
+
     const tickRows: (typeof priceTicks.$inferInsert)[] = [];
     const adjustments: (typeof priceAdjustments.$inferInsert)[] = [];
     const newlyHalted: number[] = [];
@@ -82,7 +98,8 @@ export async function runOneTick(competitionId: number): Promise<{ ticked: boole
 
       const engineStock: EngineStock = {
         id: s.id, seed: s.seed, volatilityBps: s.volatilityBps, driftBps: s.driftBps,
-        liquidity: s.liquidity, circuitLimitBps: s.circuitLimitBps,
+        liquidity: s.liquidity, beta: betaFor(competitionId, s.symbol, s.volatilityBps),
+        circuitLimitBps: s.circuitLimitBps,
         sessionOpenPaise: s.sessionOpenPaise, halted: s.status === "halted",
       };
 
@@ -90,7 +107,11 @@ export async function runOneTick(competitionId: number): Promise<{ ticked: boole
       const news = newsDelta.get(s.id) ?? 0;
 
       const out = computeTick(
-        { tickIndex: nextTick, state, stock: engineStock, netQty, newsDeltaBps: news },
+        {
+          tickIndex: nextTick, state, stock: engineStock, netQty, newsDeltaBps: news,
+          marketBps: factor?.bps ?? 0,
+          shockBps: shockedStockId === s.id ? shock!.deltaBps : 0,
+        },
         cfg, pullback,
       );
 
@@ -110,6 +131,19 @@ export async function runOneTick(competitionId: number): Promise<{ ticked: boole
         adjustments.push({
           competitionId, stockId: s.id, tickIndex: nextTick, kind: "news",
           deltaBps: news, actorType: "system",
+        });
+      }
+      if (factor && factor.bps !== 0) {
+        adjustments.push({
+          competitionId, stockId: s.id, tickIndex: nextTick, kind: "market",
+          deltaBps: Math.round(factor.bps * engineStock.beta),
+          reason: factor.regime.label, actorType: "system",
+        });
+      }
+      if (shockedStockId === s.id && shock) {
+        adjustments.push({
+          competitionId, stockId: s.id, tickIndex: nextTick, kind: "shock",
+          deltaBps: shock.deltaBps, reason: "Unexplained move", actorType: "system",
         });
       }
       if (out.breachedCircuit && s.status !== "halted") newlyHalted.push(s.id);
@@ -256,4 +290,14 @@ export function startTicker(): void {
 
 export function stopTicker(): void {
   if (timer) { clearInterval(timer); timer = null; }
+}
+
+
+/** Ticks from open to close, used for the intraday volatility curve. */
+function sessionLength(c: typeof competitions.$inferSelect): number {
+  const fallback = (3 * 3600) / Math.max(1, c.tickIntervalSeconds);
+  if (!c.startsAt || !c.endsAt) return fallback;
+  const seconds = (c.endsAt.getTime() - c.startsAt.getTime()) / 1000;
+  if (!Number.isFinite(seconds) || seconds <= 0) return fallback;
+  return Math.max(60, Math.round(seconds / Math.max(1, c.tickIntervalSeconds)));
 }

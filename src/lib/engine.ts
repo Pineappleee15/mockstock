@@ -40,7 +40,9 @@ export function pullbackBps(cfg: EngineConfig): number {
  */
 export function impactBpsFor(netQty: number, stock: EngineStock, cfg: EngineConfig): number {
   if (!cfg.orderFlowEnabled || netQty === 0) return 0;
-  const liquidity = Math.max(1, stock.liquidity);
+  // Liquidity can be scaled globally: the per-stock figures are calibrated for
+  // a given crowd size, and a small room needs thinner books to feel anything.
+  const liquidity = Math.max(1, stock.liquidity * ((cfg.liquidityMultiplierBps ?? 10_000) / BPS));
   const magnitude = Math.sqrt(Math.abs(netQty) / liquidity);
   const raw = cfg.impactCoefficientBps * magnitude * Math.sign(netQty);
   const clamped = Math.max(-cfg.maxImpactBpsPerTick, Math.min(cfg.maxImpactBpsPerTick, raw));
@@ -100,7 +102,9 @@ export function computeTick(input: TickInput, cfg: EngineConfig, pullback: numbe
   }
 
   const dtMinutes = cfg.tickIntervalSeconds / 60;
-  const volMult = cfg.volatilityMultiplierBps / BPS;
+  // Regime turbulence lifts every stock's own volatility as well as the market
+  // factor, so a panic is felt twice: broadly and individually.
+  const volMult = (cfg.volatilityMultiplierBps / BPS) * (cfg.regimeVolMultiplier ?? 1);
 
   // volatilityBps and driftBps are quoted PER MINUTE, so changing the tick
   // interval does not change how dramatic the event feels.
@@ -112,8 +116,12 @@ export function computeTick(input: TickInput, cfg: EngineConfig, pullback: numbe
   const permanent = Math.round((impact * cfg.permanentImpactBps) / BPS);
   const transient = impact - permanent;
 
-  // Anchor: fundamentals + news + the permanent share of order flow.
-  const anchorGrowth = 1 + drift + sigma * z + newsDeltaBps / BPS + permanent / BPS;
+  // Anchor: fundamentals, the shared market move scaled by this stock's beta,
+  // news, an unexplained shock if it drew one, and the permanent share of order
+  // flow. The market term is what makes stocks fall and recover together.
+  const market = ((input.marketBps ?? 0) * stock.beta) / BPS;
+  const shock = (input.shockBps ?? 0) / BPS;
+  const anchorGrowth = 1 + drift + sigma * z + market + shock + newsDeltaBps / BPS + permanent / BPS;
   const anchorNext = Math.max(1, Math.round(state.anchorPaise * anchorGrowth));
 
   // Gap: order-flow displacement, decaying back toward fair value.
