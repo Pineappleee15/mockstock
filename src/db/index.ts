@@ -12,9 +12,17 @@ declare global {
 
 // One pool per process. Reused across HMR reloads in dev so we don't leak
 // connections every time a file changes.
+/**
+ * Hosted Postgres (Neon, Railway, Render) requires TLS; the vendored local
+ * database in .tools/ does not speak it at all. Decide from the host rather
+ * than making the developer remember to set a flag.
+ */
+const isLocal = /@(localhost|127\.0\.0\.1|\[::1\])[:/]/.test(connectionString);
+
 export const sql =
   global.__mockstock_sql ??
   postgres(connectionString, {
+    ssl: isLocal ? false : "require",
     max: 20,
     idle_timeout: 30,
     connect_timeout: 10,

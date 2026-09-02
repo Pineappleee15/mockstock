@@ -20,7 +20,10 @@ if (!url) {
   process.exit(1);
 }
 
-const sql = postgres(url, { max: 1, onnotice: () => {} });
+// Same TLS rule as src/db/index.ts: hosted Postgres needs it, the vendored
+// local database cannot do it.
+const isLocal = /@(localhost|127\.0\.0\.1|\[::1\])[:/]/.test(url);
+const sql = postgres(url, { max: 1, onnotice: () => {}, ssl: isLocal ? false : "require" });
 
 try {
   console.log("[deploy-init] applying migrations...");

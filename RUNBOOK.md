@@ -60,9 +60,11 @@ when you leave the column blank, but it assumes a 10-team demo.
 
 | Teams | Notional to use |
 | --- | --- |
-| 10 (demo) | Rs 20 lakh |
+| 10-20 (the seeded default) | Rs 20 lakh |
 | 100 | Rs 2 crore |
 | 300 | Rs 6 crore |
+
+For a 10-20 team event the seeded defaults are already right. Leave them alone.
 
 Too low and a handful of teams move a stock 20% and trip the circuit breaker in the
 first minute. Too high and trading feels inert and the event is just a random walk.

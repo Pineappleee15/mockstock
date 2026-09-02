@@ -1,15 +1,108 @@
-# Deploying MockStock to Railway
+# Deploying MockStock
 
-End result: a public URL like `https://mockstock-production.up.railway.app` that
-your team opens on their phones. Your laptop can be off.
+Two routes. Pick one.
 
-About 15 minutes, most of it waiting on builds. Free tier is enough for a demo;
-Railway's free credit runs out with continuous uptime, so for a real event
-budget the ~$5/month Hobby plan.
+- **[Free: Render + Neon](#free-render--neon)** — genuinely $0, no card. Right choice
+  for a 10-20 team event. The server sleeps after 15 minutes of no traffic and
+  takes about 50 seconds to wake, which does not matter once people are trading.
+- **[Paid: Railway](#paid-railway)** — about $5/month, no sleeping, one dashboard
+  instead of two. Worth it only if you are running for 100+ teams or want the
+  extra headroom.
+
+Both use the same code and the same `npm run deploy` start command. Switching
+later means changing where `DATABASE_URL` points, nothing else.
+
+---
+
+# Free: Render + Neon
+
+The database and the app live on two different services, because Render's free
+Postgres is **deleted after 30 days** whereas Neon's free tier does not expire.
+
+## 1. Create the database (Neon)
+
+1. Go to **neon.tech** → sign in with GitHub → **Create project**.
+2. Name it `mockstock`, pick the region closest to you, create.
+3. On the dashboard, copy the **connection string**. It looks like
+   `postgresql://user:pass@ep-something.aws.neon.tech/neondb?sslmode=require`.
+
+Keep that tab open, you need the string in a moment.
+
+## 2. Create the web service (Render)
+
+1. Go to **render.com** → **Get Started** → sign in with GitHub.
+2. **New → Web Service** → connect your GitHub → pick **mockstock**.
+   Since the repo is private you may have to click **Configure account** and
+   grant Render access to it specifically.
+3. Render reads `render.yaml` from the repo, so build and start commands fill
+   themselves in. Confirm they say:
+   - Build: `npm install && npm run build`
+   - Start: `npm run deploy`
+4. Instance type: **Free**.
+
+## 3. Set the environment variables
+
+Before the first deploy, add these under **Environment**:
+
+```
+DATABASE_URL=<paste your Neon connection string here>
+SESSION_SECRET=eca924f3c98ceb52c34d75c95f893fcf70cae581b5d00b1025bf59d6f032d2fc
+ADMIN_USERNAME=admin
+ADMIN_PASSWORD=CHANGE-THIS-TO-SOMETHING-REAL
+```
+
+`TICKER_ENABLED` and `SEED_DEMO` come from `render.yaml` automatically.
+
+**Change `ADMIN_PASSWORD` before deploying.** This is your admin login on a
+public URL. Minimum 8 characters — the app refuses to start otherwise.
+
+**Do not share `SESSION_SECRET`.** It signs every login cookie.
+
+## 4. Deploy and watch the log
+
+Click **Create Web Service**. First build takes 3-5 minutes.
+
+In the logs you want to see:
+
+```
+[deploy-init] applying migrations...
+[deploy-init] applying constraints...
+[deploy-init] created admin "admin"
+[deploy-init] seeded the demo competition
+[deploy-init] ready
+✓ Ready in ...
+```
+
+Render then shows your URL at the top: `https://mockstock-xxxx.onrender.com`.
+That is the link you send your team.
+
+## 5. Know about the sleep
+
+On the free tier Render stops the server after **15 minutes with no requests**,
+and the next visitor waits ~50 seconds while it wakes.
+
+In practice:
+
+- Open the link yourself 2 minutes before the event so it is warm.
+- Once teams are trading it never idles, so it never sleeps.
+- If the market is open and everyone walks away for 15 minutes, the ticker stops
+  with it. On wake it replays the missed ticks (capped at 20 minutes' worth), so
+  nothing is lost, but prices will jump rather than move. Pause the market if you
+  are taking a long break.
+
+---
+
+# Paid: Railway
+
+A public URL like `https://mockstock-production.up.railway.app`, no sleeping,
+app and database in one dashboard. About $5/month — Railway no longer has a
+free tier, only a one-off trial credit that runs out in a few days of uptime.
 
 ---
 
 ## 1. Put the code on GitHub
+
+(Already done if you followed the free route — skip to step 2.)
 
 You need a GitHub account (github.com, free).
 

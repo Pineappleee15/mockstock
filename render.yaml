@@ -1,0 +1,31 @@
+# Render Blueprint. Free tier is plenty for a 10-20 team event.
+#
+# The database is NOT defined here on purpose: Render's free Postgres is deleted
+# after 30 days, so we point at a Neon free database instead, which does not
+# expire. Set DATABASE_URL in the Render dashboard to the Neon connection string.
+services:
+  - type: web
+    name: mockstock
+    runtime: node
+    plan: free
+    buildCommand: npm install && npm run build
+    startCommand: npm run deploy
+    healthCheckPath: /login
+    envVars:
+      - key: NODE_VERSION
+        value: "22"
+      - key: TICKER_ENABLED
+        value: "true"
+      # Set to true for the first deploy so the demo competition exists, then
+      # remove it once you have imported your own stocks and teams.
+      - key: SEED_DEMO
+        value: "true"
+      # These four are set by hand in the dashboard — never committed.
+      - key: DATABASE_URL
+        sync: false
+      - key: SESSION_SECRET
+        sync: false
+      - key: ADMIN_USERNAME
+        sync: false
+      - key: ADMIN_PASSWORD
+        sync: false
