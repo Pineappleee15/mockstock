@@ -18,7 +18,12 @@ export default async function NewsPage() {
 
   return (
     <div className="space-y-4">
-      <NewsComposer competitionId={comp.id} stocks={all} tickSeconds={comp.tickIntervalSeconds} />
+      <NewsComposer
+        competitionId={comp.id}
+        stocks={all}
+        tickSeconds={comp.tickIntervalSeconds}
+        circuitLimitBps={comp.circuitLimitBps}
+      />
 
       <Card>
         <div className="border-b border-border px-3 py-2 text-sm font-semibold">Published</div>

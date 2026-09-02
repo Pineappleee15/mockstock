@@ -14,10 +14,19 @@ interface StockOpt { id: number; symbol: string; name: string; sector: string }
  * actually comes from.
  */
 export function NewsComposer({
-  competitionId, stocks, tickSeconds,
-}: { competitionId: number; stocks: StockOpt[]; tickSeconds: number }) {
+  competitionId, stocks, tickSeconds, circuitLimitBps,
+}: {
+  competitionId: number; stocks: StockOpt[]; tickSeconds: number; circuitLimitBps: number;
+}) {
   const [selected, setSelected] = useState<Set<number>>(new Set());
   const [decay, setDecay] = useState(120);
+  const [impactPct, setImpactPct] = useState(3);
+
+  // Teams reacting to the headline push the price further in the same
+  // direction, so an impact anywhere near the circuit limit will trip it.
+  const limitPct = circuitLimitBps / 100;
+  const tripsBreaker = Math.abs(impactPct) >= limitPct;
+  const nearBreaker = !tripsBreaker && Math.abs(impactPct) >= limitPct * 0.7;
 
   const sectors = useMemo(
     () => Array.from(new Set(stocks.map((s) => s.sector))).sort(), [stocks]);
@@ -56,7 +65,9 @@ export function NewsComposer({
         <div className="flex flex-wrap gap-2">
           <label className="flex items-center gap-2 text-xs text-muted">
             Impact %
-            <Input name="impactPct" type="number" step="0.1" defaultValue="3" required className="w-24" />
+            <Input name="impactPct" type="number" step="0.1" required className="w-24"
+              value={impactPct}
+              onChange={(e) => setImpactPct(Number(e.target.value) || 0)} />
           </label>
           <label className="flex items-center gap-2 text-xs text-muted">
             Applied over (seconds)
@@ -67,6 +78,27 @@ export function NewsComposer({
             = {ticks} tick{ticks === 1 ? "" : "s"}, front-loaded then settling. Permanent: it does not fade back.
           </span>
         </div>
+
+        {(tripsBreaker || nearBreaker) && (
+          <p className={`rounded px-3 py-2 text-xs ${
+            tripsBreaker ? "bg-down/10 text-down" : "bg-accent/10 text-accent"
+          }`}>
+            {tripsBreaker ? (
+              <>
+                <strong>This will halt the stock.</strong> Your circuit limit is {limitPct.toFixed(0)}% from
+                the session open, and this impact alone is {Math.abs(impactPct)}%. Trading will stop and you
+                will have to resume it from the Stocks page. Use an impact under {(limitPct * 0.7).toFixed(0)}%,
+                or raise the circuit limit in Settings.
+              </>
+            ) : (
+              <>
+                <strong>Close to the circuit limit.</strong> Teams buying the news push the price further in
+                the same direction, so {Math.abs(impactPct)}% against a {limitPct.toFixed(0)}% limit may well
+                trip the breaker and halt the stock.
+              </>
+            )}
+          </p>
+        )}
 
         <div>
           <div className="mb-1 flex flex-wrap gap-1">

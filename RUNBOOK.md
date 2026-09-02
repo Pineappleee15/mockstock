@@ -138,6 +138,25 @@ Check the tick counter on the admin dashboard.
    there is no gap in the charts and no lost news event. Nothing is lost by restarting.
 3. Still stuck? Check the server logs for `[ticker] cycle failed`.
 
+### Sizing a news event so it does not halt the stock
+
+The circuit breaker halts a stock that moves more than the circuit limit
+(default **20%**) from its session open. A news event whose impact is at or above
+that limit **will** halt the stock — and teams buying the news push it further in
+the same direction, so even 15% against a 20% limit often trips it.
+
+Rules of thumb:
+
+- Keep news impact under **70% of the circuit limit** — so under 14% at the
+  default. The composer warns you before you publish either way.
+- Want a bigger, more dramatic move? Raise the circuit limit in **Settings**
+  first. 40% gives you room for a 25% headline.
+- Or split it: two 10% events a few minutes apart read as a developing story and
+  give teams a second chance to react.
+
+If it does halt, that is not a bug — it is the safety rail working. Resume it
+from the Stocks page.
+
 ### One stock shows HALTED
 
 It hit its circuit limit. **Stocks -> Resume** un-halts it and re-bases the circuit
