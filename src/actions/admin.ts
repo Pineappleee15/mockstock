@@ -1,7 +1,7 @@
 "use server";
 
 import { revalidatePath } from "next/cache";
-import { eq, and } from "drizzle-orm";
+import { eq, and, sql } from "drizzle-orm";
 import { z } from "zod";
 import Papa from "papaparse";
 import { db, competitions, stocks, teams, portfolios } from "@/db";
@@ -361,5 +361,131 @@ export async function adjustCashAction(
     await adjustCash(admin, teamId, rupeesToPaise(amountRupees), reason.trim());
     refresh();
     return { ok: true, message: "Cash adjusted." };
+  } catch (e) { return fail(e); }
+}
+
+/**
+ * Delete a team and everything belonging to it.
+ *
+ * Refused while the market is open: deleting a team mid-event is almost always
+ * a misclick, and it takes their trades with it, which quietly changes every
+ * price those trades moved. Disable them instead.
+ */
+export async function deleteTeam(teamId: number): Promise<ActionResult> {
+  try {
+    const admin = await requireAdmin();
+    const team = await db.query.teams.findFirst({ where: eq(teams.id, teamId) });
+    if (!team) return { ok: false, error: "Team not found." };
+
+    const comp = await db.query.competitions.findFirst({
+      where: eq(competitions.id, team.competitionId),
+    });
+    if (comp?.state === "open") {
+      return { ok: false, error: "Cannot delete a team while the market is open. Pause first, or disable them instead." };
+    }
+
+    // Everything hangs off teams with ON DELETE CASCADE, so this is one statement.
+    await db.delete(teams).where(eq(teams.id, teamId));
+
+    await audit(admin, "team.delete", {
+      competitionId: team.competitionId, entityType: "team", entityId: teamId,
+      payload: { name: team.name, joinCode: team.joinCode },
+    });
+    refresh();
+    return { ok: true, message: `Deleted ${team.name}.` };
+  } catch (e) { return fail(e); }
+}
+
+/** Delete every team in the competition. For clearing demo data before a real event. */
+export async function deleteAllTeams(competitionId: number): Promise<ActionResult> {
+  try {
+    const admin = await requireAdmin();
+    const comp = await db.query.competitions.findFirst({ where: eq(competitions.id, competitionId) });
+    if (!comp) return { ok: false, error: "Competition not found." };
+    if (comp.state === "open") {
+      return { ok: false, error: "Cannot delete teams while the market is open. Pause first." };
+    }
+
+    const existing = await db.query.teams.findMany({ where: eq(teams.competitionId, competitionId) });
+    await db.delete(teams).where(eq(teams.competitionId, competitionId));
+
+    await audit(admin, "teams.delete_all", {
+      competitionId, payload: { count: existing.length },
+    });
+    refresh();
+    return { ok: true, message: `Deleted all ${existing.length} teams.` };
+  } catch (e) { return fail(e); }
+}
+
+/**
+ * Create a new competition and make it the active one.
+ *
+ * Only one competition is live at a time (enforced by a partial unique index),
+ * so this refuses while the current one is still running. Past competitions
+ * stay in the database for their results pages.
+ */
+export async function createCompetition(form: FormData): Promise<ActionResult> {
+  try {
+    const admin = await requireAdmin();
+
+    const name = String(form.get("name") ?? "").trim();
+    const mode = String(form.get("mode") ?? "event");
+    const startingCashRupees = Number(form.get("startingCashRupees"));
+    const copyStocksFrom = Number(form.get("copyStocksFrom")) || null;
+
+    if (!name) return { ok: false, error: "Give the competition a name." };
+    if (mode !== "event" && mode !== "league") return { ok: false, error: "Mode must be event or league." };
+    if (!Number.isFinite(startingCashRupees) || startingCashRupees < 1) {
+      return { ok: false, error: "Starting cash must be a positive number." };
+    }
+
+    const live = await db.query.competitions.findFirst({
+      where: sql`state IN ('pre_open','open','paused')`,
+    });
+    if (live) {
+      return {
+        ok: false,
+        error: `"${live.name}" is still running. Close or end it before starting a new competition.`,
+      };
+    }
+
+    const [created] = await db.insert(competitions).values({
+      name,
+      mode,
+      state: "draft",
+      startingCashPaise: rupeesToPaise(startingCashRupees),
+      startsAt: new Date(),
+      endsAt: new Date(Date.now() + 4 * 60 * 60 * 1000),
+    }).returning();
+
+    // Copying the universe saves re-importing 20 stocks for every event.
+    // Seeds are re-derived from the new competition id so the price paths differ.
+    let copied = 0;
+    if (copyStocksFrom) {
+      const source = await db.query.stocks.findMany({
+        where: eq(stocks.competitionId, copyStocksFrom),
+      });
+      if (source.length) {
+        await db.insert(stocks).values(source.map((s) => ({
+          competitionId: created!.id,
+          symbol: s.symbol, name: s.name, sector: s.sector,
+          startingPricePaise: s.startingPricePaise,
+          volatilityBps: s.volatilityBps, driftBps: s.driftBps,
+          liquidity: s.liquidity, circuitLimitBps: s.circuitLimitBps,
+          seed: seedFromString(`${created!.id}:${s.symbol}`) % 2_000_000_000,
+        })));
+        copied = source.length;
+      }
+    }
+
+    await audit(admin, "competition.create", {
+      competitionId: created!.id,
+      payload: { name, mode, startingCashRupees, copiedStocks: copied },
+    });
+    refresh();
+    return {
+      ok: true,
+      message: `Created "${name}"` + (copied ? ` with ${copied} stocks copied over.` : ". Import your stocks next."),
+    };
   } catch (e) { return fail(e); }
 }

@@ -1,6 +1,6 @@
 "use client";
 
-import { updateCompetition } from "@/actions/admin";
+import { updateCompetition, createCompetition } from "@/actions/admin";
 import { ActionForm } from "@/components/action-button";
 import { Card, Input } from "@/components/ui";
 
@@ -81,6 +81,61 @@ export function SettingsForm({ competition: c }: { competition: Comp }) {
           </div>
         </Card>
       </ActionForm>
+
+      <NewCompetition currentId={c.id} currentName={c.name} currentState={c.state} />
     </div>
+  );
+}
+
+/**
+ * Start a fresh competition. Only one runs at a time, so this refuses while the
+ * current one is live. Copying the stock universe over saves re-importing the
+ * whole thing for every event.
+ */
+function NewCompetition({
+  currentId, currentName, currentState,
+}: { currentId: number; currentName: string; currentState: string }) {
+  const live = ["pre_open", "open", "paused"].includes(currentState);
+
+  return (
+    <Card className="border-border p-3">
+      <h2 className="text-sm font-semibold">Start a new competition</h2>
+      <p className="mb-3 text-[11px] text-muted">
+        The current one keeps its data and its results page. You get a clean slate:
+        no teams, no trades, fresh prices.
+      </p>
+
+      {live ? (
+        <p className="rounded bg-accent/10 px-3 py-2 text-xs text-accent">
+          &ldquo;{currentName}&rdquo; is still running. Close or end it on the Control page first.
+        </p>
+      ) : (
+        <ActionForm run={(fd) => createCompetition(fd)} submitLabel="Create competition">
+          <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
+            <label className="block">
+              <span className="mb-1 block text-xs font-medium text-muted">Name</span>
+              <Input name="name" required placeholder="Finance Cell Mock Stock 2026" />
+            </label>
+            <label className="block">
+              <span className="mb-1 block text-xs font-medium text-muted">Mode</span>
+              <select name="mode" defaultValue="event"
+                className="w-full rounded-md border border-border bg-surface-2 px-3 py-2 text-sm">
+                <option value="event">Event — one session of a few hours</option>
+                <option value="league">League — open and close over several days</option>
+              </select>
+            </label>
+            <label className="block">
+              <span className="mb-1 block text-xs font-medium text-muted">Starting cash (₹)</span>
+              <Input name="startingCashRupees" type="number" defaultValue={1000000} required />
+            </label>
+            <label className="flex items-end gap-2 pb-2 text-sm">
+              <input type="checkbox" name="copyStocksFrom" value={currentId} defaultChecked
+                className="size-4 accent-[var(--color-accent)]" />
+              Copy the current stock list
+            </label>
+          </div>
+        </ActionForm>
+      )}
+    </Card>
   );
 }

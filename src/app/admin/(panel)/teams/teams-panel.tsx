@@ -1,7 +1,10 @@
 "use client";
 
 import { Fragment, useState } from "react";
-import { createTeams, resetTeamPassword, setTeamDisabled, adjustCashAction } from "@/actions/admin";
+import {
+  createTeams, resetTeamPassword, setTeamDisabled, adjustCashAction,
+  deleteTeam, deleteAllTeams,
+} from "@/actions/admin";
 import { ActionButton, ActionForm } from "@/components/action-button";
 import { Card, Badge, Input, Empty, Button } from "@/components/ui";
 import { formatRupees } from "@/lib/money";
@@ -60,10 +63,21 @@ export function TeamsPanel({ competitionId, teams }: { competitionId: number; te
       </div>
 
       <Card>
-        <div className="flex items-center justify-between gap-3 border-b border-border px-3 py-2">
+        <div className="flex flex-wrap items-center justify-between gap-3 border-b border-border px-3 py-2">
           <h2 className="text-sm font-semibold">{teams.length} teams</h2>
-          <Input value={q} onChange={(e) => setQ(e.target.value)}
-            placeholder="Search name or code" className="max-w-56" />
+          <div className="flex items-center gap-2">
+            <Input value={q} onChange={(e) => setQ(e.target.value)}
+              placeholder="Search name or code" className="max-w-56" />
+            {teams.length > 0 && (
+              <ActionButton
+                variant="danger"
+                confirm={`Delete all ${teams.length} teams and their trades? Use this to clear demo data before a real event. This cannot be undone.`}
+                run={() => deleteAllTeams(competitionId)}
+              >
+                Delete all
+              </ActionButton>
+            )}
+          </div>
         </div>
 
         {filtered.length === 0 ? <Empty>No teams match.</Empty> : (
@@ -127,6 +141,13 @@ function TeamRowView({ team, onToggleCash }: { team: TeamRow; onToggleCash: () =
             run={() => setTeamDisabled(team.id, !team.disabled)}
           >
             {team.disabled ? "Enable" : "Disable"}
+          </ActionButton>
+          <ActionButton
+            variant="danger"
+            confirm={`Delete ${team.name} permanently? This also deletes their trades and cannot be undone. Disable them instead if you just want to lock them out.`}
+            run={() => deleteTeam(team.id)}
+          >
+            Delete
           </ActionButton>
         </div>
       </td>
