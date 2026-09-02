@@ -1,9 +1,9 @@
-import demo from "./demo-data.json";
+import demo from "../src/data/universe.json";
 
 /**
  * Demo dataset for the seed script.
  *
- * The data itself lives in demo-data.json so that scripts/deploy-init.mjs —
+ * The data itself lives in src/data/universe.json so that scripts/deploy-init.mjs —
  * which is plain JavaScript and runs in production without a TypeScript loader
  * — can share exactly this list instead of keeping a second copy that drifts.
  */

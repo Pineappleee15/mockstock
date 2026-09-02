@@ -14,6 +14,7 @@ import {
   overridePrice, publishNews, voidTrade, adjustCash,
 } from "@/lib/market";
 import { invalidate } from "@/lib/cache";
+import baseline from "@/data/universe.json";
 
 export type ActionResult = { ok: true; message: string } | { ok: false; error: string };
 
@@ -486,6 +487,68 @@ export async function createCompetition(form: FormData): Promise<ActionResult> {
     return {
       ok: true,
       message: `Created "${name}"` + (copied ? ` with ${copied} stocks copied over.` : ". Import your stocks next."),
+    };
+  } catch (e) { return fail(e); }
+}
+
+/**
+ * Load the built-in stock universe into a competition.
+ *
+ * The baseline is src/data/universe.json — 28 Indian stocks, four in each of
+ * seven sectors, so sector news always hits a real basket. Symbols already
+ * present are skipped, so this is safe to run on a competition that has some
+ * stocks already, and safe to run twice.
+ *
+ * Liquidity is derived from a rupee notional rather than set per stock, so
+ * cheap and expensive names are equally movable by order flow.
+ */
+export async function loadStandardUniverse(competitionId: number): Promise<ActionResult> {
+  try {
+    const admin = await requireAdmin();
+
+    const existing = await db.query.stocks.findMany({
+      where: eq(stocks.competitionId, competitionId),
+    });
+    const have = new Set(existing.map((s) => s.symbol));
+
+    // Metals move more easily than large caps, so they read as small caps:
+    // a couple of teams can genuinely push them around.
+    const notionalFor = (sector: string) =>
+      sector === "Metals" ? 140_000_000 : sector === "FMCG" ? 240_000_000 : 200_000_000;
+
+    const toInsert = baseline.stocks
+      .filter((s) => !have.has(s.symbol))
+      .map((s) => {
+        const pricePaise = rupeesToPaise(s.price);
+        return {
+          competitionId,
+          symbol: s.symbol,
+          name: s.name,
+          sector: s.sector,
+          startingPricePaise: pricePaise,
+          volatilityBps: s.volBps,
+          driftBps: 0,
+          liquidity: Math.max(10, Math.round(notionalFor(s.sector) / pricePaise)),
+          seed: seedFromString(`${competitionId}:${s.symbol}`) % 2_000_000_000,
+        };
+      });
+
+    if (toInsert.length === 0) {
+      return { ok: true, message: `All ${baseline.stocks.length} standard stocks are already loaded.` };
+    }
+
+    await db.insert(stocks).values(toInsert);
+    await audit(admin, "stocks.load_standard", {
+      competitionId,
+      payload: { added: toInsert.length, skipped: baseline.stocks.length - toInsert.length },
+    });
+    refresh();
+
+    const skipped = baseline.stocks.length - toInsert.length;
+    return {
+      ok: true,
+      message: `Added ${toInsert.length} stock${toInsert.length === 1 ? "" : "s"}` +
+        (skipped ? `, skipped ${skipped} already present.` : "."),
     };
   } catch (e) { return fail(e); }
 }

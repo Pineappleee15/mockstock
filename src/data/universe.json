@@ -1,32 +1,32 @@
 {
   "stocks": [
     {
-      "symbol": "TCS",
-      "name": "Tata Consultancy Services",
-      "sector": "IT",
-      "price": 4150,
-      "volBps": 45
-    },
-    {
-      "symbol": "INFY",
-      "name": "Infosys",
-      "sector": "IT",
-      "price": 1890,
+      "symbol": "BAJAJAUTO",
+      "name": "Bajaj Auto",
+      "sector": "Auto",
+      "price": 9500,
       "volBps": 55
     },
     {
-      "symbol": "WIPRO",
-      "name": "Wipro",
-      "sector": "IT",
-      "price": 545,
-      "volBps": 70
+      "symbol": "MAHINDRA",
+      "name": "Mahindra & Mahindra",
+      "sector": "Auto",
+      "price": 2870,
+      "volBps": 60
     },
     {
-      "symbol": "HCLTECH",
-      "name": "HCL Technologies",
-      "sector": "IT",
-      "price": 1720,
-      "volBps": 60
+      "symbol": "MARUTI",
+      "name": "Maruti Suzuki",
+      "sector": "Auto",
+      "price": 12400,
+      "volBps": 45
+    },
+    {
+      "symbol": "TATAMOTORS",
+      "name": "Tata Motors",
+      "sector": "Auto",
+      "price": 985,
+      "volBps": 90
     },
     {
       "symbol": "HDFCBANK",
@@ -43,6 +43,13 @@
       "volBps": 45
     },
     {
+      "symbol": "KOTAKBANK",
+      "name": "Kotak Mahindra Bank",
+      "sector": "Banking",
+      "price": 1790,
+      "volBps": 50
+    },
+    {
       "symbol": "SBIN",
       "name": "State Bank of India",
       "sector": "Banking",
@@ -50,10 +57,24 @@
       "volBps": 65
     },
     {
-      "symbol": "KOTAKBANK",
-      "name": "Kotak Mahindra Bank",
-      "sector": "Banking",
-      "price": 1790,
+      "symbol": "NTPC",
+      "name": "NTPC",
+      "sector": "Energy",
+      "price": 360,
+      "volBps": 55
+    },
+    {
+      "symbol": "ONGC",
+      "name": "Oil & Natural Gas Corp",
+      "sector": "Energy",
+      "price": 265,
+      "volBps": 85
+    },
+    {
+      "symbol": "POWERGRID",
+      "name": "Power Grid Corp",
+      "sector": "Energy",
+      "price": 320,
       "volBps": 50
     },
     {
@@ -64,53 +85,11 @@
       "volBps": 50
     },
     {
-      "symbol": "ONGC",
-      "name": "Oil & Natural Gas Corp",
-      "sector": "Energy",
-      "price": 265,
-      "volBps": 85
-    },
-    {
-      "symbol": "NTPC",
-      "name": "NTPC",
-      "sector": "Energy",
-      "price": 360,
-      "volBps": 55
-    },
-    {
-      "symbol": "POWERGRID",
-      "name": "Power Grid Corp",
-      "sector": "Energy",
-      "price": 320,
-      "volBps": 50
-    },
-    {
-      "symbol": "TATAMOTORS",
-      "name": "Tata Motors",
-      "sector": "Auto",
-      "price": 985,
-      "volBps": 90
-    },
-    {
-      "symbol": "MARUTI",
-      "name": "Maruti Suzuki",
-      "sector": "Auto",
-      "price": 12400,
-      "volBps": 45
-    },
-    {
-      "symbol": "MAHINDRA",
-      "name": "Mahindra & Mahindra",
-      "sector": "Auto",
-      "price": 2870,
-      "volBps": 60
-    },
-    {
-      "symbol": "BAJAJAUTO",
-      "name": "Bajaj Auto",
-      "sector": "Auto",
-      "price": 9500,
-      "volBps": 55
+      "symbol": "BRITANNIA",
+      "name": "Britannia Industries",
+      "sector": "FMCG",
+      "price": 5800,
+      "volBps": 35
     },
     {
       "symbol": "HINDUNILVR",
@@ -127,11 +106,53 @@
       "volBps": 40
     },
     {
-      "symbol": "SUNPHARMA",
-      "name": "Sun Pharmaceutical",
-      "sector": "Pharma",
-      "price": 1780,
+      "symbol": "NESTLEIND",
+      "name": "Nestle India",
+      "sector": "FMCG",
+      "price": 2550,
+      "volBps": 30
+    },
+    {
+      "symbol": "HCLTECH",
+      "name": "HCL Technologies",
+      "sector": "IT",
+      "price": 1720,
+      "volBps": 60
+    },
+    {
+      "symbol": "INFY",
+      "name": "Infosys",
+      "sector": "IT",
+      "price": 1890,
       "volBps": 55
+    },
+    {
+      "symbol": "TCS",
+      "name": "Tata Consultancy Services",
+      "sector": "IT",
+      "price": 4150,
+      "volBps": 45
+    },
+    {
+      "symbol": "WIPRO",
+      "name": "Wipro",
+      "sector": "IT",
+      "price": 545,
+      "volBps": 70
+    },
+    {
+      "symbol": "HINDALCO",
+      "name": "Hindalco Industries",
+      "sector": "Metals",
+      "price": 645,
+      "volBps": 105
+    },
+    {
+      "symbol": "JSWSTEEL",
+      "name": "JSW Steel",
+      "sector": "Metals",
+      "price": 920,
+      "volBps": 95
     },
     {
       "symbol": "TATASTEEL",
@@ -139,6 +160,13 @@
       "sector": "Metals",
       "price": 145,
       "volBps": 100
+    },
+    {
+      "symbol": "VEDL",
+      "name": "Vedanta",
+      "sector": "Metals",
+      "price": 450,
+      "volBps": 115
     },
     {
       "symbol": "CIPLA",
@@ -155,25 +183,18 @@
       "volBps": 65
     },
     {
-      "symbol": "JSWSTEEL",
-      "name": "JSW Steel",
-      "sector": "Metals",
-      "price": 920,
-      "volBps": 95
+      "symbol": "LUPIN",
+      "name": "Lupin",
+      "sector": "Pharma",
+      "price": 2100,
+      "volBps": 75
     },
     {
-      "symbol": "HINDALCO",
-      "name": "Hindalco Industries",
-      "sector": "Metals",
-      "price": 645,
-      "volBps": 105
-    },
-    {
-      "symbol": "NESTLEIND",
-      "name": "Nestle India",
-      "sector": "FMCG",
-      "price": 2550,
-      "volBps": 30
+      "symbol": "SUNPHARMA",
+      "name": "Sun Pharmaceutical",
+      "sector": "Pharma",
+      "price": 1780,
+      "volBps": 55
     }
   ],
   "teams": [

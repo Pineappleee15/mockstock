@@ -104,7 +104,7 @@ function joinCode(i) {
 }
 
 async function seedDemo(sql) {
-  const demo = JSON.parse(readFileSync("scripts/demo-data.json", "utf8"));
+  const demo = JSON.parse(readFileSync("src/data/universe.json", "utf8"));
   const startingCash = 100_000_000; // Rs 10,00,000 in paise
 
   const [comp] = await sql`

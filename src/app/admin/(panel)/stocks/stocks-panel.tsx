@@ -1,7 +1,9 @@
 "use client";
 
 import { Fragment, useState } from "react";
-import { importStocks, haltStockAction, unhaltStockAction, overridePriceAction } from "@/actions/admin";
+import {
+  importStocks, haltStockAction, unhaltStockAction, overridePriceAction, loadStandardUniverse,
+} from "@/actions/admin";
 import { ActionButton, ActionForm } from "@/components/action-button";
 import { Card, Badge, Button, Input, Empty, Change } from "@/components/ui";
 import { formatRupees, returnBps } from "@/lib/money";
@@ -21,7 +23,23 @@ export function StocksPanel({
   return (
     <div className="space-y-4">
       <Card className="p-3">
-        <h2 className="mb-2 text-sm font-semibold">Import stock universe</h2>
+        <div className="flex flex-wrap items-center justify-between gap-3">
+          <div>
+            <h2 className="text-sm font-semibold">Standard universe</h2>
+            <p className="mt-0.5 text-[11px] text-muted">
+              28 Indian stocks, four in every sector, so sector news always hits a real basket.
+              Symbols you already have are skipped, so this is safe to run on a competition
+              that is part way set up.
+            </p>
+          </div>
+          <ActionButton variant="buy" run={() => loadStandardUniverse(competitionId)}>
+            Load standard universe
+          </ActionButton>
+        </div>
+      </Card>
+
+      <Card className="p-3">
+        <h2 className="mb-2 text-sm font-semibold">Or import your own CSV</h2>
         <ActionForm run={(fd) => importStocks(competitionId, fd)} submitLabel="Import CSV">
           <textarea
             name="csv" rows={5}
