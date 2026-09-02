@@ -224,6 +224,42 @@ Also keep **at least three stocks in every sector**. A sector with one stock
 makes sector-wide news arbitrary and gives teams no reason ever to rotate into
 it.
 
+### Generated news
+
+You do not have to write headlines during the event. **News -> Generate
+storyline** plans a whole session in advance and publishes it on the clock.
+
+What it produces is stories, not one-liners. An arc runs over several minutes —
+a rumour, then confirmation or a denial, then the fallout — so acting on the
+rumour is a real risk and waiting for certainty costs you the move. Some arcs
+are cross-sector, which is what makes the market feel joined up: crude rising
+lifts energy and squeezes the car makers in the same breath.
+
+It also reads the market's mood when placing each story, so bad news tends to
+land while the market is already selling off and good news during a rally.
+Roughly 90% of headlines end up agreeing with the mood, and the session appears
+to explain itself.
+
+You keep control:
+
+- **Publish now** fires any queued headline early.
+- **Drop** removes one you do not want.
+- **Regenerate** rewrites the rest of the schedule and never touches anything
+  already published, so it is safe mid-event.
+- **Settings -> Publish queued news automatically** turns the clock off entirely
+  and leaves you firing each one by hand.
+- The composer is still there for anything you want to write yourself.
+
+Nothing queued is visible to teams, and queued headlines move no prices, until
+they publish. Impacts are automatically capped below the circuit limit so
+generated news never halts a stock on its own.
+
+Preview a session's headlines before the event without touching the database:
+
+```bash
+npx tsx scripts/storyline-preview.ts 1 180
+```
+
 ### Sizing a news event so it does not halt the stock
 
 The circuit breaker halts a stock that moves more than the circuit limit

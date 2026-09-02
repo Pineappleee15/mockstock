@@ -11,7 +11,7 @@ interface Comp {
   tickIntervalSeconds: number; volatilityMultiplierBps: number;
   orderFlowEnabled: boolean; impactCoefficientBps: number; maxImpactBpsPerTick: number;
   gapHalflifeSeconds: number; permanentImpactBps: number;
-  regimeEnabled: boolean; marketFactorBps: number;
+  regimeEnabled: boolean; marketFactorBps: number; autoNewsEnabled: boolean;
   liquidityMultiplierBps: number; shockChanceBps: number;
 }
 
@@ -90,11 +90,18 @@ export function SettingsForm({ competition: c }: { competition: Comp }) {
             occasional panic — and stocks fall and recover together, each according to its
             beta. Volatility also runs higher around the open and into the close.
           </p>
-          <label className="mb-3 flex items-center gap-2 text-sm">
-            <input type="checkbox" name="regimeEnabled" defaultChecked={c.regimeEnabled}
-              className="size-4 accent-[var(--color-accent)]" />
-            Enable market regimes
-          </label>
+          <div className="mb-3 flex flex-wrap gap-x-6 gap-y-2">
+            <label className="flex items-center gap-2 text-sm">
+              <input type="checkbox" name="regimeEnabled" defaultChecked={c.regimeEnabled}
+                className="size-4 accent-[var(--color-accent)]" />
+              Enable market regimes
+            </label>
+            <label className="flex items-center gap-2 text-sm">
+              <input type="checkbox" name="autoNewsEnabled" defaultChecked={c.autoNewsEnabled}
+                className="size-4 accent-[var(--color-accent)]" />
+              Publish queued news automatically
+            </label>
+          </div>
           <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
             <Field label="Market factor (bps)" name="marketFactorBps" type="number"
               defaultValue={c.marketFactorBps}

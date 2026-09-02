@@ -219,6 +219,7 @@ export async function newsFeed(
     LEFT JOIN news_event_stocks ns ON ns.news_event_id = n.id
     LEFT JOIN stocks s ON s.id = ns.stock_id
     WHERE n.competition_id = ${comp.id}
+      AND n.status = 'published'
       ${sinceMinutes
         ? sql`AND n.published_at > now() - (${sinceMinutes} * interval '1 minute')`
         : sql``}

@@ -15,6 +15,7 @@ export const orderSide = pgEnum("order_side", ["buy", "sell"]);
 export const orderStatus = pgEnum("order_status", ["filled", "rejected"]);
 export const adjustmentKind = pgEnum("adjustment_kind", ["news", "order_flow", "override", "market", "shock"]);
 export const actorType = pgEnum("actor_type", ["admin", "team", "system"]);
+export const newsStatus = pgEnum("news_status", ["queued", "published"]);
 
 /* ────────────────────────────  identity  ──────────────────────────── */
 
@@ -62,6 +63,8 @@ export const competitions = pgTable("competitions", {
   liquidityMultiplierBps: integer("liquidity_multiplier_bps").notNull().default(10000),
   /** Chance per tick that a random stock takes an unexplained shock. */
   shockChanceBps: integer("shock_chance_bps").notNull().default(15),
+  /** Whether queued news publishes itself when its tick arrives. */
+  autoNewsEnabled: boolean("auto_news_enabled").notNull().default(true),
 
   currentTick: integer("current_tick").notNull().default(0),
   lastTickAt: timestamp("last_tick_at", { withTimezone: true }),
@@ -149,6 +152,14 @@ export const newsEvents = pgTable("news_events", {
   decaySeconds: integer("decay_seconds").notNull().default(120),
   startTick: integer("start_tick").notNull(),
   endTick: integer("end_tick").notNull(),
+  /**
+   * Queued events are written ahead of time and go live when the clock reaches
+   * their start tick. Participants only ever see published ones.
+   */
+  status: newsStatus("status").notNull().default("published"),
+  /** Groups the beats of one storyline so the admin can see it as a story. */
+  arcId: text("arc_id"),
+  arcStep: integer("arc_step"),
   publishedAt: timestamp("published_at", { withTimezone: true }).notNull().defaultNow(),
   createdBy: bigint("created_by", { mode: "number" }).references(() => admins.id),
 }, (t) => [index("news_comp_idx").on(t.competitionId, t.publishedAt)]);

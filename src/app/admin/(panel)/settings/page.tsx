@@ -19,5 +19,6 @@ export default async function SettingsPage() {
     permanentImpactBps: comp.permanentImpactBps,
     regimeEnabled: comp.regimeEnabled, marketFactorBps: comp.marketFactorBps,
     liquidityMultiplierBps: comp.liquidityMultiplierBps, shockChanceBps: comp.shockChanceBps,
+    autoNewsEnabled: comp.autoNewsEnabled,
   }} />;
 }

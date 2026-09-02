@@ -4,11 +4,12 @@ import { revalidatePath } from "next/cache";
 import { eq, and, sql } from "drizzle-orm";
 import { z } from "zod";
 import Papa from "papaparse";
-import { db, competitions, stocks, teams, portfolios } from "@/db";
+import { db, competitions, stocks, teams, portfolios, newsEvents, newsEventStocks } from "@/db";
 import { requireAdmin, generateJoinCode, hashPassword } from "@/lib/auth";
 import { audit } from "@/lib/audit";
 import { seedFromString } from "@/lib/rng";
 import { driftFor } from "@/lib/fundamentals";
+import { planStoryline } from "@/lib/storyline";
 import { rupeesToPaise } from "@/lib/money";
 import {
   openMarket, setMarketState, resumeMarket, haltStock, unhaltStock,
@@ -72,6 +73,7 @@ const configSchema = z.object({
   marketFactorBps: z.coerce.number().int().min(0).max(30000),
   liquidityMultiplierBps: z.coerce.number().int().min(500).max(100000),
   shockChanceBps: z.coerce.number().int().min(0).max(500),
+  autoNewsEnabled: z.coerce.boolean(),
 });
 
 export async function updateCompetition(competitionId: number, form: FormData): Promise<ActionResult> {
@@ -96,6 +98,7 @@ export async function updateCompetition(competitionId: number, form: FormData): 
       marketFactorBps: form.get("marketFactorBps"),
       liquidityMultiplierBps: form.get("liquidityMultiplierBps"),
       shockChanceBps: form.get("shockChanceBps"),
+      autoNewsEnabled: form.get("autoNewsEnabled") === "on",
     });
     if (!parsed.success) {
       return { ok: false, error: parsed.error.issues.map((i) => `${i.path.join(".")}: ${i.message}`).join("; ") };
@@ -566,5 +569,125 @@ export async function loadStandardUniverse(competitionId: number): Promise<Actio
       message: `Added ${toInsert.length} stock${toInsert.length === 1 ? "" : "s"}` +
         (skipped ? `, skipped ${skipped} already present.` : "."),
     };
+  } catch (e) { return fail(e); }
+}
+
+/* ─────────────────────────  generated storyline  ───────────────────────── */
+
+/**
+ * Plan a session's worth of news and queue it.
+ *
+ * Replaces any news still queued, never anything already published — you can
+ * regenerate the rest of a session mid-event without rewriting its history.
+ */
+export async function generateStoryline(competitionId: number): Promise<ActionResult> {
+  try {
+    const admin = await requireAdmin();
+    const comp = await db.query.competitions.findFirst({ where: eq(competitions.id, competitionId) });
+    if (!comp) return { ok: false, error: "Competition not found." };
+
+    const universe = await db.query.stocks.findMany({ where: eq(stocks.competitionId, competitionId) });
+    if (universe.length === 0) return { ok: false, error: "Load some stocks first." };
+
+    const sessionMinutes = comp.startsAt && comp.endsAt
+      ? Math.max(20, Math.round((comp.endsAt.getTime() - comp.startsAt.getTime()) / 60000))
+      : 180;
+
+    // Keep every headline comfortably inside the circuit limit, so generated
+    // news never halts a stock on its own.
+    const maxImpactPct = Math.max(1, (comp.circuitLimitBps / 100) * 0.45);
+
+    const plan = planStoryline(
+      competitionId,
+      universe.map((s) => ({ id: s.id, symbol: s.symbol, name: s.name, sector: s.sector })),
+      sessionMinutes,
+      comp.tickIntervalSeconds,
+      { maxImpactPct },
+    );
+    if (plan.length === 0) return { ok: false, error: "Could not plan anything for this session." };
+
+    await db.transaction(async (tx) => {
+      await tx.delete(newsEvents).where(and(
+        eq(newsEvents.competitionId, competitionId),
+        eq(newsEvents.status, "queued"),
+      ));
+
+      for (const beat of plan) {
+        const ticks = Math.max(1, Math.ceil(beat.decaySeconds / comp.tickIntervalSeconds));
+        const [row] = await tx.insert(newsEvents).values({
+          competitionId,
+          headline: beat.headline,
+          body: `${beat.arcTitle} · part ${beat.arcStep} of ${beat.arcLength}`,
+          impactBps: beat.impactBps,
+          decaySeconds: beat.decaySeconds,
+          startTick: beat.tick,
+          endTick: beat.tick + ticks - 1,
+          status: "queued",
+          arcId: beat.arcId,
+          arcStep: beat.arcStep,
+          createdBy: admin.id,
+        }).returning({ id: newsEvents.id });
+
+        if (beat.stockIds.length) {
+          await tx.insert(newsEventStocks).values(
+            beat.stockIds.map((stockId) => ({ newsEventId: row!.id, stockId, impactBps: null })),
+          );
+        }
+      }
+    });
+
+    const stories = new Set(plan.map((b) => b.arcId)).size;
+    await audit(admin, "news.generate", {
+      competitionId, payload: { headlines: plan.length, stories, sessionMinutes },
+    });
+    refresh();
+    return {
+      ok: true,
+      message: `Queued ${plan.length} headlines across ${stories} stories, spread over ${sessionMinutes} minutes.`,
+    };
+  } catch (e) { return fail(e); }
+}
+
+/** Fire a queued headline immediately instead of waiting for its slot. */
+export async function publishQueuedNow(newsEventId: number): Promise<ActionResult> {
+  try {
+    const admin = await requireAdmin();
+    const row = await db.query.newsEvents.findFirst({ where: eq(newsEvents.id, newsEventId) });
+    if (!row) return { ok: false, error: "Not found." };
+    if (row.status === "published") return { ok: false, error: "Already published." };
+
+    const comp = await db.query.competitions.findFirst({ where: eq(competitions.id, row.competitionId) });
+    if (!comp) return { ok: false, error: "Competition not found." };
+
+    const ticks = Math.max(1, row.endTick - row.startTick + 1);
+    const start = comp.currentTick + 1;
+    await db.update(newsEvents).set({
+      status: "published", startTick: start, endTick: start + ticks - 1, publishedAt: new Date(),
+    }).where(eq(newsEvents.id, newsEventId));
+
+    await audit(admin, "news.publish_early", {
+      competitionId: row.competitionId, entityType: "news_event", entityId: newsEventId,
+    });
+    refresh();
+    return { ok: true, message: "Published." };
+  } catch (e) { return fail(e); }
+}
+
+/** Drop a queued headline that does not suit. */
+export async function deleteQueuedNews(newsEventId: number): Promise<ActionResult> {
+  try {
+    const admin = await requireAdmin();
+    const row = await db.query.newsEvents.findFirst({ where: eq(newsEvents.id, newsEventId) });
+    if (!row) return { ok: false, error: "Not found." };
+    if (row.status === "published") {
+      return { ok: false, error: "That one has already gone out. It cannot be unpublished." };
+    }
+    await db.delete(newsEvents).where(eq(newsEvents.id, newsEventId));
+    await audit(admin, "news.delete_queued", {
+      competitionId: row.competitionId, entityType: "news_event", entityId: newsEventId,
+      payload: { headline: row.headline },
+    });
+    refresh();
+    return { ok: true, message: "Removed from the queue." };
   } catch (e) { return fail(e); }
 }

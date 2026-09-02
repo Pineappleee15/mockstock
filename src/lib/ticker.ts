@@ -70,6 +70,19 @@ export async function runOneTick(competitionId: number): Promise<{ ticked: boole
       flowByStock.set(Number(r.stock_id), Number(r.net));
     }
 
+    // Promote queued headlines whose slot has arrived. Done before the deltas
+    // are computed so a headline going live this tick also moves prices this
+    // tick, rather than a beat behind.
+    if (comp.autoNewsEnabled) {
+      await tx.update(newsEvents)
+        .set({ status: "published", publishedAt: new Date() })
+        .where(and(
+          eq(newsEvents.competitionId, competitionId),
+          eq(newsEvents.status, "queued"),
+          sql`${newsEvents.startTick} <= ${nextTick}`,
+        ));
+    }
+
     // News increments landing on this tick.
     const newsDelta = await newsDeltasForTick(tx, competitionId, nextTick, comp.tickIntervalSeconds);
 
@@ -210,6 +223,7 @@ async function newsDeltasForTick(
     .innerJoin(newsEventStocks, eq(newsEventStocks.newsEventId, newsEvents.id))
     .where(and(
       eq(newsEvents.competitionId, competitionId),
+      eq(newsEvents.status, "published"),
       sql`${newsEvents.startTick} <= ${tick}`,
       sql`${newsEvents.endTick} >= ${tick}`,
     ));
