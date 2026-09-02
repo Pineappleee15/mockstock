@@ -108,9 +108,9 @@ async function seedDemo(sql) {
   const startingCash = 100_000_000; // Rs 10,00,000 in paise
 
   const [comp] = await sql`
-    INSERT INTO competitions (name, mode, state, starting_cash_paise, starts_at, ends_at)
-    VALUES ('MockStock Demo Event', 'event', 'draft', ${startingCash},
-            now(), now() + interval '4 hours')
+    INSERT INTO competitions (name, mode, state, starting_cash_paise, session_minutes, starts_at, ends_at)
+    VALUES ('MockStock Demo Event', 'event', 'draft', ${startingCash}, 180,
+            now(), now() + interval '3 hours')
     RETURNING id
   `;
 

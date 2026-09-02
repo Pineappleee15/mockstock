@@ -12,6 +12,7 @@ export default async function SettingsPage() {
     startingCashPaise: comp.startingCashPaise, brokerageBps: comp.brokerageBps,
     spreadBps: comp.spreadBps, concentrationCapBps: comp.concentrationCapBps,
     orderRateLimitPerMin: comp.orderRateLimitPerMin, circuitLimitBps: comp.circuitLimitBps,
+    sessionMinutes: comp.sessionMinutes,
     tickIntervalSeconds: comp.tickIntervalSeconds,
     volatilityMultiplierBps: comp.volatilityMultiplierBps,
     orderFlowEnabled: comp.orderFlowEnabled, impactCoefficientBps: comp.impactCoefficientBps,

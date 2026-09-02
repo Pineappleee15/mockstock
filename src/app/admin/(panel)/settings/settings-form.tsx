@@ -1,11 +1,14 @@
 "use client";
 
+import { useState } from "react";
+
 import { updateCompetition, createCompetition } from "@/actions/admin";
 import { ActionForm } from "@/components/action-button";
 import { Card, Input } from "@/components/ui";
 
 interface Comp {
   id: number; name: string; mode: string; state: string;
+  sessionMinutes: number;
   startingCashPaise: number; brokerageBps: number; spreadBps: number;
   concentrationCapBps: number; orderRateLimitPerMin: number; circuitLimitBps: number;
   tickIntervalSeconds: number; volatilityMultiplierBps: number;
@@ -24,6 +27,43 @@ function Field({
       <span className="mb-1 block text-xs font-medium text-muted">{label}</span>
       <Input name={name} defaultValue={defaultValue} {...rest} />
       {hint && <span className="mt-0.5 block text-[11px] text-muted">{hint}</span>}
+    </label>
+  );
+}
+
+/**
+ * How long the session is meant to run.
+ *
+ * Not merely a label: it sets how far apart the generated news stories are
+ * spaced, and where the volatility curve puts its opening and closing rush. A
+ * 40-minute mock and a four-hour event need very different pacing from the same
+ * engine.
+ */
+function SessionLength({ initial }: { initial: number }) {
+  const [minutes, setMinutes] = useState(initial);
+  const hrs = Math.floor(minutes / 60);
+  const mins = minutes % 60;
+  const pretty = hrs > 0 ? `${hrs}h${mins ? ` ${mins}m` : ""}` : `${mins}m`;
+
+  return (
+    <label className="block sm:col-span-2">
+      <span className="mb-1 flex items-baseline justify-between text-xs font-medium text-muted">
+        <span>Session length</span>
+        <span className="num text-sm font-semibold text-text">{pretty}</span>
+      </span>
+      <input
+        type="range" name="sessionMinutes" min={15} max={480} step={5}
+        value={minutes}
+        onChange={(e) => setMinutes(Number(e.target.value))}
+        className="w-full accent-[var(--color-accent)]"
+      />
+      <span className="mt-0.5 flex justify-between text-[10px] text-muted">
+        <span>15m</span><span>2h</span><span>4h</span><span>8h</span>
+      </span>
+      <span className="mt-0.5 block text-[11px] text-muted">
+        Spaces the generated news and sets where the opening and closing rush fall.
+        Regenerate the storyline after changing it.
+      </span>
     </label>
   );
 }
@@ -51,6 +91,7 @@ export function SettingsForm({ competition: c }: { competition: Comp }) {
               defaultValue={c.circuitLimitBps} hint="2000 = halt after a 20% move from session open" />
             <Field label="Tick interval (seconds)" name="tickIntervalSeconds" type="number"
               defaultValue={c.tickIntervalSeconds} hint="Takes effect without a restart" />
+            <SessionLength initial={c.sessionMinutes} />
             <Field label="Volatility multiplier (bps)" name="volatilityMultiplierBps" type="number"
               defaultValue={c.volatilityMultiplierBps} hint="10000 = 1.0x. 20000 makes the event twice as wild." />
           </div>

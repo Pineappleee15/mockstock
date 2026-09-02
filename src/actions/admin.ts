@@ -62,6 +62,7 @@ const configSchema = z.object({
   concentrationCapBps: z.coerce.number().int().min(100).max(10000),
   orderRateLimitPerMin: z.coerce.number().int().min(1).max(600),
   circuitLimitBps: z.coerce.number().int().min(0).max(10000),
+  sessionMinutes: z.coerce.number().int().min(15).max(600),
   tickIntervalSeconds: z.coerce.number().int().min(1).max(120),
   volatilityMultiplierBps: z.coerce.number().int().min(0).max(100000),
   orderFlowEnabled: z.coerce.boolean(),
@@ -87,6 +88,7 @@ export async function updateCompetition(competitionId: number, form: FormData): 
       concentrationCapBps: form.get("concentrationCapBps"),
       orderRateLimitPerMin: form.get("orderRateLimitPerMin"),
       circuitLimitBps: form.get("circuitLimitBps"),
+      sessionMinutes: form.get("sessionMinutes"),
       tickIntervalSeconds: form.get("tickIntervalSeconds"),
       volatilityMultiplierBps: form.get("volatilityMultiplierBps"),
       orderFlowEnabled: form.get("orderFlowEnabled") === "on",
@@ -589,9 +591,7 @@ export async function generateStoryline(competitionId: number): Promise<ActionRe
     const universe = await db.query.stocks.findMany({ where: eq(stocks.competitionId, competitionId) });
     if (universe.length === 0) return { ok: false, error: "Load some stocks first." };
 
-    const sessionMinutes = comp.startsAt && comp.endsAt
-      ? Math.max(20, Math.round((comp.endsAt.getTime() - comp.startsAt.getTime()) / 60000))
-      : 180;
+    const sessionMinutes = comp.sessionMinutes;
 
     // Keep every headline comfortably inside the circuit limit, so generated
     // news never halts a stock on its own.

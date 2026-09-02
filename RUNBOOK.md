@@ -229,6 +229,20 @@ it.
 You do not have to write headlines during the event. **News -> Generate
 storyline** plans a whole session in advance and publishes it on the clock.
 
+**Set the session length first.** Settings has a slider, 15 minutes to 8 hours.
+It decides how far apart the stories are spaced and where the opening and
+closing volatility rush falls, so a 40-minute mock and a four-hour event are
+paced quite differently by the same engine. Roughly one story every 22 minutes:
+
+| Session | Stories | Headlines |
+| --- | --- | --- |
+| 30m | 2 | 4 |
+| 1h | 3 | 6 |
+| 3h | 8 | 18 |
+| 4h | 11 | 25 |
+
+Change the length, then regenerate — an existing schedule keeps its old spacing.
+
 What it produces is stories, not one-liners. An arc runs over several minutes —
 a rumour, then confirmation or a denial, then the fallout — so acting on the
 rumour is a real risk and waiting for certainty costs you the move. Some arcs

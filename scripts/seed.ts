@@ -56,6 +56,7 @@ async function main() {
     concentrationCapBps: 4000,
     orderRateLimitPerMin: 30,
     circuitLimitBps: 2000,
+    sessionMinutes: 180,
     tickIntervalSeconds: 5,
     volatilityMultiplierBps: 10000,
     leaderboardEveryNTicks: 2,

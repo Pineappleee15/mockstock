@@ -43,6 +43,14 @@ export const competitions = pgTable("competitions", {
   orderRateLimitPerMin: integer("order_rate_limit_per_min").notNull().default(30),
   circuitLimitBps: integer("circuit_limit_bps").notNull().default(2000),
 
+  /**
+   * How long the session is meant to run, in minutes.
+   *
+   * Drives the generated news schedule and the intraday volatility curve, which
+   * is busy around the open and into the close. Kept separate from startsAt and
+   * endsAt so it can be changed without rewriting the clock.
+   */
+  sessionMinutes: integer("session_minutes").notNull().default(180),
   tickIntervalSeconds: integer("tick_interval_seconds").notNull().default(5),
   volatilityMultiplierBps: integer("volatility_multiplier_bps").notNull().default(10000),
   leaderboardEveryNTicks: integer("leaderboard_every_n_ticks").notNull().default(2),

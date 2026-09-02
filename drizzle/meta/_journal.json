@@ -29,6 +29,13 @@
       "when": 1788371842488,
       "tag": "0003_woozy_domino",
       "breakpoints": true
+    },
+    {
+      "idx": 4,
+      "version": "7",
+      "when": 1788372847509,
+      "tag": "0004_great_stature",
+      "breakpoints": true
     }
   ]
 }

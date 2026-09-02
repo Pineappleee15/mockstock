@@ -1,0 +1,1 @@
+ALTER TABLE "competitions" ADD COLUMN "session_minutes" integer DEFAULT 180 NOT NULL;

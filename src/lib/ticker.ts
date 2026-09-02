@@ -309,9 +309,5 @@ export function stopTicker(): void {
 
 /** Ticks from open to close, used for the intraday volatility curve. */
 function sessionLength(c: typeof competitions.$inferSelect): number {
-  const fallback = (3 * 3600) / Math.max(1, c.tickIntervalSeconds);
-  if (!c.startsAt || !c.endsAt) return fallback;
-  const seconds = (c.endsAt.getTime() - c.startsAt.getTime()) / 1000;
-  if (!Number.isFinite(seconds) || seconds <= 0) return fallback;
-  return Math.max(60, Math.round(seconds / Math.max(1, c.tickIntervalSeconds)));
+  return Math.max(60, Math.round((c.sessionMinutes * 60) / Math.max(1, c.tickIntervalSeconds)));
 }
