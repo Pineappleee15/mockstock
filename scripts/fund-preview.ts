@@ -10,15 +10,17 @@ const cases: Array<[string, string, number, number, number]> = [
   ["ONGC", "Energy", 265, 85, 7547],
 ];
 
-for (const [sym, sec, rupees, vol, liq] of cases) {
+for (const [sym, , rupees, vol, liq] of cases) {
   const price = rupees * 100;
   const drift = driftFor(1, sym);
   const h = priceHistory(1, sym, price, vol, drift);
-  const f = fundamentalsFor(1, sym, sec, price, vol, drift, liq, h);
+  const f = fundamentalsFor(1, sym, price, vol, drift, liq, h);
   console.log(
     sym.padEnd(11),
     ("drift " + String(drift).padStart(2)).padEnd(10),
     ("₹" + f.marketCapCr.toLocaleString("en-IN") + " Cr").padEnd(18),
-    f.summary,
+    ("growth " + String(f.revenueGrowthPct) + "%").padEnd(14),
+    ("PE " + String(f.peRatio)).padEnd(10),
+    f.analystRating,
   );
 }

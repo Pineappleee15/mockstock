@@ -24,7 +24,7 @@ function universe(compId: number) {
     const history = priceHistory(compId, symbol, price, vol, drift);
     return {
       symbol, price, vol, drift, history,
-      f: fundamentalsFor(compId, symbol, "IT", price, vol, drift, 1500, history),
+      f: fundamentalsFor(compId, symbol, price, vol, drift, 1500, history),
     };
   });
 }

@@ -28,7 +28,7 @@ export default async function StockPage({ params }: { params: Promise<{ symbol: 
   // Derived on the server from the stock's real hidden parameters. The drift
   // itself is never sent to the client — working it out is the exercise.
   const fundamentals = fundamentalsFor(
-    comp.id, stock.symbol, stock.sector, stock.startingPricePaise,
+    comp.id, stock.symbol, stock.startingPricePaise,
     stock.volatilityBps, stock.driftBps, stock.liquidity, series,
   );
 

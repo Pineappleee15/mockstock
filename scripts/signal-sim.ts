@@ -40,7 +40,7 @@ function runEvent(compId: number) {
     const price = Math.round(s.price * 100);
     const drift = driftFor(compId, s.symbol);
     const history = priceHistory(compId, s.symbol, price, s.volBps, drift);
-    const f = fundamentalsFor(compId, s.symbol, s.sector, price, s.volBps, drift, 1500, history);
+    const f = fundamentalsFor(compId, s.symbol, price, s.volBps, drift, 1500, history);
     return { symbol: s.symbol, price, vol: s.volBps, drift, f };
   });
 

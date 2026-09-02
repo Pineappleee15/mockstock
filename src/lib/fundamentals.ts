@@ -90,8 +90,6 @@ export interface Fundamentals {
   low52Paise: number;
   analystTargetPaise: number;
   analystRating: "Strong buy" | "Buy" | "Hold" | "Reduce" | "Sell";
-  /** Plain-English summary, so a first-time participant has a way in. */
-  summary: string;
 }
 
 const RATINGS = ["Sell", "Reduce", "Hold", "Buy", "Strong buy"] as const;
@@ -110,7 +108,7 @@ const RATINGS = ["Sell", "Reduce", "Hold", "Buy", "Strong buy"] as const;
  * than not and wrong often enough to be worth a second opinion.
  */
 export function fundamentalsFor(
-  competitionId: number, symbol: string, sector: string,
+  competitionId: number, symbol: string,
   pricePaise: number, volatilityBps: number, driftBps: number, liquidity: number,
   history: number[],
 ): Fundamentals {
@@ -157,31 +155,7 @@ export function fundamentalsFor(
     low52Paise: Math.max(1, lo - pad),
     analystTargetPaise,
     analystRating: RATINGS[ratingIndex]!,
-    summary: summarise(sector, revenueGrowthPct, peRatio, beta, debtToEquity),
   };
-}
-
-/** "An IT business", not "A it business" — sector names include acronyms. */
-function describeSector(sector: string): string {
-  const isAcronym = /^[A-Z]{2,}$/.test(sector);
-  const label = isAcronym ? sector : sector.toLowerCase();
-  const first = label[0] ?? "";
-  const vowelSound = isAcronym
-    ? "AEFHILMNORSX".includes(first)     // letters read with a leading vowel
-    : "aeiou".includes(first);
-  return `${vowelSound ? "An" : "A"} ${label}`;
-}
-
-function summarise(
-  sector: string, growth: number, pe: number, beta: number, debt: number,
-): string {
-  const g = growth > 14 ? "growing fast" : growth > 7 ? "growing steadily" : growth > 2 ? "growing slowly" : "shrinking";
-  // Kept as a matching participle phrase so it reads correctly after either
-  // "growing steadily" or "shrinking".
-  const v = pe > 30 ? "priced richly" : pe > 20 ? "fairly priced" : "priced cheaply";
-  const r = beta > 1.4 ? "Moves hard in both directions." : beta < 0.8 ? "Tends to move less than the market." : "";
-  const d = debt > 0.9 ? " Carries heavy debt." : debt < 0.3 ? " Very little debt." : "";
-  return `${describeSector(sector)} business, ${g}, ${v}.${d}${r ? " " + r : ""}`;
 }
 
 const round1 = (n: number) => Math.round(n * 10) / 10;

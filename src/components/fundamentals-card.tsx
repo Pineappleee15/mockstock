@@ -1,7 +1,7 @@
 "use client";
 
 import { Card } from "@/components/ui";
-import { formatRupees, formatCompact } from "@/lib/money";
+import { formatRupees } from "@/lib/money";
 import type { Fundamentals } from "@/lib/fundamentals";
 
 const RATING_TONE: Record<Fundamentals["analystRating"], string> = {
@@ -35,20 +35,21 @@ function Row({ label, value, hint }: { label: string; value: string; hint?: stri
 export function FundamentalsCard({
   f, pricePaise, sector,
 }: { f: Fundamentals; pricePaise: number; sector: string }) {
+  // No prose summary here on purpose: spelling out "growing fast, priced
+  // richly" does the interpretation for the reader, which is the part that is
+  // meant to separate the teams who do the work from the ones who do not.
   const upside = (f.analystTargetPaise - pricePaise) / pricePaise;
   const inRange = Math.max(0, Math.min(1,
     (pricePaise - f.low52Paise) / Math.max(1, f.high52Paise - f.low52Paise)));
 
   return (
     <Card className="p-3">
-      <div className="mb-2 flex items-center justify-between gap-3">
+      <div className="mb-3 flex items-center justify-between gap-3">
         <h2 className="text-sm font-semibold">Company</h2>
         <span className="rounded bg-surface-2 px-1.5 py-0.5 text-[10px] uppercase tracking-wide text-muted">
           {sector}
         </span>
       </div>
-
-      <p className="mb-3 text-xs leading-relaxed text-muted">{f.summary}</p>
 
       <div className="grid gap-x-6 sm:grid-cols-2">
         <div className="divide-y divide-border/40">
@@ -67,7 +68,7 @@ export function FundamentalsCard({
         <div className="mb-1 flex items-baseline justify-between text-xs">
           <span className="text-muted">52-week range</span>
           <span className="num text-muted">
-            {formatCompact(f.low52Paise)} – {formatCompact(f.high52Paise)}
+            {formatRupees(f.low52Paise, { decimals: false })} – {formatRupees(f.high52Paise, { decimals: false })}
           </span>
         </div>
         <div className="relative h-1.5 rounded-full bg-surface-2" aria-hidden>
