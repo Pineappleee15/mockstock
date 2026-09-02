@@ -139,6 +139,41 @@
       "sector": "Metals",
       "price": 145,
       "volBps": 100
+    },
+    {
+      "symbol": "CIPLA",
+      "name": "Cipla",
+      "sector": "Pharma",
+      "price": 1520,
+      "volBps": 60
+    },
+    {
+      "symbol": "DRREDDY",
+      "name": "Dr Reddy's Labs",
+      "sector": "Pharma",
+      "price": 1240,
+      "volBps": 65
+    },
+    {
+      "symbol": "JSWSTEEL",
+      "name": "JSW Steel",
+      "sector": "Metals",
+      "price": 920,
+      "volBps": 95
+    },
+    {
+      "symbol": "HINDALCO",
+      "name": "Hindalco Industries",
+      "sector": "Metals",
+      "price": 645,
+      "volBps": 105
+    },
+    {
+      "symbol": "NESTLEIND",
+      "name": "Nestle India",
+      "sector": "FMCG",
+      "price": 2550,
+      "volBps": 30
     }
   ],
   "teams": [

@@ -138,6 +138,31 @@ Check the tick counter on the admin dashboard.
    there is no gap in the charts and no lost news event. Nothing is lost by restarting.
 3. Still stuck? Check the server logs for `[ticker] cycle failed`.
 
+### How many stocks to run
+
+Not as many as you think. Team trading is the primary price driver, so the
+universe has to be small enough that flow concentrates.
+
+With the 40% concentration cap each team ends up holding roughly 4-6 stocks, so
+`teams x 5` is about how many position-slots exist in total. Divide by your
+stock count to get the average number of teams holding each name:
+
+- **3 or more teams per stock** — prices move, the market feels alive
+- **under 2** — most stocks see no trades at all and just drift on the
+  background random walk, and your main price driver quietly stops working
+
+Rule of thumb: **stocks between 1.5x and 2x your team count.**
+
+| Teams | Stocks |
+| --- | --- |
+| 10-12 | 20-25 |
+| 30 | 45-60 |
+| 100+ | 60-80 is plenty; more is scroll noise |
+
+Also keep **at least three stocks in every sector**. A sector with one stock
+makes sector-wide news arbitrary and gives teams no reason ever to rotate into
+it.
+
 ### Sizing a news event so it does not halt the stock
 
 The circuit breaker halts a stock that moves more than the circuit limit
