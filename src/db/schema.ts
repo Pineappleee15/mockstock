@@ -203,6 +203,24 @@ export const holdings = pgTable("holdings", {
   check("holdings_qty_nonneg", sql`${t.quantity} >= 0`),
 ]);
 
+/**
+ * Stocks a team has starred.
+ *
+ * Server-side rather than in the browser: a team shares one login across
+ * several phones, so a watchlist held locally would differ per device and
+ * vanish when someone signed in somewhere else.
+ */
+export const watchlist = pgTable("watchlist", {
+  teamId: bigint("team_id", { mode: "number" }).notNull()
+    .references(() => teams.id, { onDelete: "cascade" }),
+  stockId: bigint("stock_id", { mode: "number" }).notNull()
+    .references(() => stocks.id, { onDelete: "cascade" }),
+  createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+}, (t) => [
+  primaryKey({ columns: [t.teamId, t.stockId] }),
+  index("watchlist_team_idx").on(t.teamId),
+]);
+
 /* ────────────────────────────  orders & trades  ──────────────────────────── */
 
 export const orders = pgTable("orders", {
@@ -366,3 +384,4 @@ export type PriceTick = typeof priceTicks.$inferSelect;
 export type Trade = typeof trades.$inferSelect;
 export type Order = typeof orders.$inferSelect;
 export type NewsEvent = typeof newsEvents.$inferSelect;
+export type Watchlist = typeof watchlist.$inferSelect;

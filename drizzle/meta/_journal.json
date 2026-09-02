@@ -8,6 +8,13 @@
       "when": 1788338292094,
       "tag": "0000_yummy_vapor",
       "breakpoints": true
+    },
+    {
+      "idx": 1,
+      "version": "7",
+      "when": 1788347105078,
+      "tag": "0001_large_klaw",
+      "breakpoints": true
     }
   ]
 }

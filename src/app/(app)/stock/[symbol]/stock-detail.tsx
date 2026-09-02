@@ -7,6 +7,7 @@ import { LivePrice } from "@/components/price";
 import { PriceChart } from "@/components/price-chart";
 import { TradePanel } from "@/components/trade-panel";
 import { FundamentalsCard } from "@/components/fundamentals-card";
+import { WatchStar } from "@/components/watch-star";
 import type { MarketRow, PortfolioView } from "@/lib/queries";
 import type { Fundamentals } from "@/lib/fundamentals";
 
@@ -43,6 +44,7 @@ export function StockDetail(props: Props) {
       <div className="flex items-start justify-between gap-3">
         <div className="min-w-0">
           <div className="flex items-center gap-2">
+            <WatchStar symbol={props.symbol} watched={pf?.watched?.includes(props.symbol) ?? false} size="lg" />
             <h1 className="text-xl font-bold">{props.symbol}</h1>
             {row.halted && <Badge tone="warn">Halted</Badge>}
           </div>

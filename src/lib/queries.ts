@@ -1,7 +1,7 @@
 import { and, desc, eq, sql, gte } from "drizzle-orm";
 import {
   db, competitions, stocks, priceTicks, portfolios, holdings, teams,
-  leaderboardCurrent, newsEvents, trades,
+  leaderboardCurrent, newsEvents, trades, watchlist,
 } from "@/db";
 import { returnBps } from "./money";
 
@@ -97,6 +97,8 @@ export interface PortfolioView {
   rank: number | null;
   prevRank: number | null;
   positions: PositionRow[];
+  /** Symbols this team has starred. */
+  watched: string[];
 }
 
 /** A team's full portfolio, priced at the current tick. */
@@ -139,6 +141,11 @@ export async function portfolioView(comp: LiveCompetition, teamId: number): Prom
   const unrealised = positions.reduce((s, p) => s + p.unrealisedPaise, 0);
   const value = pf.cashPaise + invested;
 
+  const starred = await db.select({ symbol: stocks.symbol })
+    .from(watchlist)
+    .innerJoin(stocks, eq(stocks.id, watchlist.stockId))
+    .where(eq(watchlist.teamId, teamId));
+
   const lb = await db.query.leaderboardCurrent.findFirst({
     where: and(eq(leaderboardCurrent.competitionId, comp.id), eq(leaderboardCurrent.teamId, teamId)),
   });
@@ -156,6 +163,7 @@ export async function portfolioView(comp: LiveCompetition, teamId: number): Prom
     rank: lb?.rank ?? null,
     prevRank: lb?.prevRank ?? null,
     positions,
+    watched: starred.map((s) => s.symbol),
   };
 }
 

@@ -5,12 +5,13 @@ import { usePoll } from "@/lib/use-poll";
 import { Card, Stat, Change, Money, Badge, Empty } from "@/components/ui";
 import { LivePrice } from "@/components/price";
 import { formatRupees } from "@/lib/money";
-import type { PortfolioView } from "@/lib/queries";
+import type { PortfolioView, MarketRow } from "@/lib/queries";
 
 type Payload = PortfolioView & { tick: number; state: string };
 
 export function DashboardLive() {
   const { data, loading, error } = usePoll<Payload>("/api/portfolio", 5000);
+  const { data: market } = usePoll<{ stocks: MarketRow[] }>("/api/market", 5000);
 
   if (loading && !data) return <Empty>Loading your portfolio…</Empty>;
   if (!data) return <Empty>{error ? "Could not load your portfolio." : "No portfolio yet."}</Empty>;
@@ -111,6 +112,38 @@ export function DashboardLive() {
           </>
         )}
       </Card>
+
+      <WatchlistCard watched={data.watched} stocks={market?.stocks ?? []} />
     </div>
+  );
+}
+
+/** Starred stocks the team does not necessarily hold — the shortlist. */
+function WatchlistCard({ watched, stocks }: { watched: string[]; stocks: MarketRow[] }) {
+  if (watched.length === 0) return null;
+  const rows = stocks.filter((s) => watched.includes(s.symbol));
+  if (rows.length === 0) return null;
+
+  return (
+    <Card>
+      <div className="border-b border-border px-3 py-2 text-sm font-semibold">
+        Watchlist <span className="font-normal text-muted">· {rows.length}</span>
+      </div>
+      <div className="divide-y divide-border/50">
+        {rows.map((s) => (
+          <Link key={s.id} href={`/stock/${s.symbol}`}
+            className="flex items-center justify-between gap-3 px-3 py-2 hover:bg-surface-2/50">
+            <div className="min-w-0">
+              <span className="font-semibold">{s.symbol}</span>
+              <span className="ml-2 truncate text-[11px] text-muted">{s.name}</span>
+            </div>
+            <div className="shrink-0 text-right">
+              <LivePrice paise={s.pricePaise} />
+              <span className="ml-2 text-xs"><Change bps={s.changeBps} /></span>
+            </div>
+          </Link>
+        ))}
+      </div>
+    </Card>
   );
 }
