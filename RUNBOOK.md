@@ -325,6 +325,23 @@ immediately.
 
 ## 5. Ending the event
 
+**End the competition, then put `/results` on the projector.** That page is the
+closing ceremony, and it is worth walking through rather than just showing:
+
+- the podium
+- **How the lead changed hands** — every team's rank through the session, so you
+  can point at the moment someone made their move
+- a session card for whoever is signed in. Sign in as admin and it shows the
+  winner's: their best and worst call, how much of each price *they* personally
+  moved, and the stock that got away
+
+That middle number is the one that lands. Because every order-flow adjustment is
+logged with the volume behind it, the app can say "you were 38% of the buying in
+HINDALCO and caused 1.3% of its move" — which is the clearest proof that the
+market was made by the room rather than by a script.
+
+Teams can open `/results` themselves to see their own card.
+
 1. **Control -> End competition.** The leaderboard freezes and `/results` becomes final.
 2. **Exports** — download all four CSVs before you touch anything else: trades,
    standings, price history, audit log.

@@ -1,5 +1,9 @@
 import Link from "next/link";
 import { activeCompetition, leaderboard } from "@/lib/queries";
+import { rankHistory, teamReplay } from "@/lib/replay";
+import { RankChart } from "@/components/rank-chart";
+import { TeamReplayCard } from "@/components/team-replay-card";
+import { currentActor } from "@/lib/auth";
 import { formatRupees, formatBps } from "@/lib/money";
 
 export const dynamic = "force-dynamic";
@@ -29,6 +33,19 @@ export default async function ResultsPage() {
   const podium = rows.slice(0, 3);
   const rest = rows.slice(3);
   const final = comp.state === "ended";
+
+  const history = await rankHistory(comp.id, comp.tickIntervalSeconds);
+
+  // A signed-in team gets its own session told back to it. An admin viewing
+  // this sees the winner's, which is the one to put on the projector.
+  const actor = await currentActor();
+  const replayTeamId =
+    actor?.kind === "team" ? actor.id
+    : actor?.kind === "admin" ? rows[0]?.teamId
+    : undefined;
+  const replay = replayTeamId
+    ? await teamReplay(comp.id, replayTeamId, comp.currentTick)
+    : null;
 
   return (
     <main className="paper-page min-h-screen px-4 py-10">
@@ -68,6 +85,33 @@ export default async function ResultsPage() {
                 </div>
               ))}
             </div>
+
+            {replay && (
+              <section className="mb-10">
+                <h2 className="mb-3 text-center text-[11px] font-bold uppercase tracking-[0.25em] text-[var(--color-ink-soft)]">
+                  {actor?.kind === "admin" ? "The winner's session" : "Your session"}
+                </h2>
+                <TeamReplayCard r={replay} />
+              </section>
+            )}
+
+            {history.points.length >= 2 && (
+              <section className="mb-10">
+                <h2 className="mb-1 text-center text-[11px] font-bold uppercase tracking-[0.25em] text-[var(--color-ink-soft)]">
+                  How the lead changed hands
+                </h2>
+                <p className="mb-3 text-center text-xs text-[var(--color-ink-soft)]">
+                  Every team&apos;s rank through the session. First place at the top.
+                </p>
+                <div className="paper-card px-2 py-4">
+                  <RankChart
+                    teams={history.teams}
+                    points={history.points}
+                    podium={podium.map((p) => p.teamName)}
+                  />
+                </div>
+              </section>
+            )}
 
             {rest.length > 0 && (
               <div className="paper-card px-1 py-2">

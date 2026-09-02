@@ -4,7 +4,7 @@ import {
   trades, portfolios, holdings, cashAdjustments, type Conn,
 } from "@/db";
 import { audit } from "./audit";
-import { recomputeLeaderboard } from "./leaderboard";
+import { recomputeLeaderboard, archiveLeaderboard } from "./leaderboard";
 import { priceHistory } from "./fundamentals";
 
 type Admin = { kind: "admin"; id: number; label: string };
@@ -100,9 +100,20 @@ export async function setMarketState(
   actor: Admin, competitionId: number, state: "pre_open" | "paused" | "closed" | "ended",
 ): Promise<void> {
   await db.transaction(async (tx) => {
+    const comp = await tx.query.competitions.findFirst({ where: eq(competitions.id, competitionId) });
+
     await tx.update(competitions)
       .set({ state, updatedAt: new Date() })
       .where(eq(competitions.id, competitionId));
+
+    // Ending stops the ticker, so take one last snapshot first — otherwise the
+    // rank chart stops five minutes short of the finish and the final standing
+    // never appears on it.
+    if (state === "ended" && comp) {
+      await recomputeLeaderboard(tx, competitionId, comp.currentTick, comp.startingCashPaise);
+      await archiveLeaderboard(tx, competitionId, comp.currentTick);
+    }
+
     await audit(actor, `market.${state}`, { competitionId, tx });
   });
 }
