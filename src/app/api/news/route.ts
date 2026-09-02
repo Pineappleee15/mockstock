@@ -29,8 +29,16 @@ export async function GET(req: Request) {
   const etag = etagFor(`news-${key}-${items[0]?.id ?? 0}-${items.length}`);
   if (notModified(req, etag)) return new NextResponse(null, { status: 304 });
 
+  // Strip the impact before it leaves the server. Rendering it neutrally is not
+  // enough — a team with devtools open would read the exact figure out of the
+  // JSON and skip the decoding entirely. Admin reads news server-side and still
+  // sees everything.
+  const publicItems = items.map(({ id, headline, body, symbols, publishedAt }) => ({
+    id, headline, body, symbols, publishedAt,
+  }));
+
   return NextResponse.json(
-    { items, windowMinutes: all ? null : TICKER_WINDOW_MINUTES },
+    { items: publicItems, windowMinutes: all ? null : TICKER_WINDOW_MINUTES },
     { headers: { ETag: etag, "Cache-Control": "no-cache" } },
   );
 }

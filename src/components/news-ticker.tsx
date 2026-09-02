@@ -2,10 +2,9 @@
 
 import Link from "next/link";
 import { usePoll } from "@/lib/use-poll";
-import { cn } from "@/lib/cn";
 
 interface NewsItem {
-  id: number; headline: string; impactBps: number; symbols: string[]; publishedAt: string;
+  id: number; headline: string; symbols: string[]; publishedAt: string;
 }
 
 /** "just now", "4m ago" — enough to tell a fresh headline from a fading one. */
@@ -15,12 +14,17 @@ function age(iso: string): string {
   return `${mins}m ago`;
 }
 
+/**
+ * Affected symbols, in one neutral colour for every headline.
+ *
+ * Deliberately NOT coloured by impact direction. Green for good news and red
+ * for bad would tell participants which way to trade before they had read the
+ * words, which defeats the entire point of a cryptic headline — and even for
+ * plain news, a real market does not tag a story with its own sign.
+ */
 function Symbols({ item }: { item: NewsItem }) {
   return (
-    <span className={cn(
-      "num font-semibold",
-      item.impactBps > 0 ? "text-up" : item.impactBps < 0 ? "text-down" : "text-accent",
-    )}>
+    <span className="num font-semibold text-accent">
       {item.symbols.slice(0, 3).join(" ") || "MARKET"}
     </span>
   );

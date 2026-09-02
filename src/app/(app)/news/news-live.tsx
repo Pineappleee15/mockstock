@@ -2,17 +2,20 @@
 
 import Link from "next/link";
 import { usePoll } from "@/lib/use-poll";
-import { Card, Empty, Change, Badge } from "@/components/ui";
+import { Card, Empty, Badge } from "@/components/ui";
 
 interface NewsItem {
   id: number; headline: string; body: string | null;
-  impactBps: number; symbols: string[]; publishedAt: string;
+  symbols: string[]; publishedAt: string;
 }
 
 /**
  * Full news history. The scrolling bar only carries the last few minutes, so
  * this is where a team goes to re-read a headline they missed — or a cryptic
  * clue they are still working on.
+ *
+ * Shows no impact figure and no directional colour: how much a headline is
+ * "worth" is the thing participants are supposed to work out.
  */
 export function NewsLive() {
   const { data, loading } = usePoll<{ items: NewsItem[] }>("/api/news?all=1", 10_000);
@@ -49,9 +52,6 @@ export function NewsLive() {
                       </span>
                     </div>
                   </div>
-                  {n.impactBps !== 0 && (
-                    <span className="shrink-0 text-sm"><Change bps={n.impactBps} /></span>
-                  )}
                 </div>
               </li>
             ))}
