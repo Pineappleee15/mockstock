@@ -23,10 +23,30 @@ export function DashboardLive({ rules }: { rules: LobbyRules | null }) {
   const neverOpened = data.state === "draft" || data.state === "pre_open";
   if (neverOpened && rules) return <Lobby teamName={data.teamName} rules={rules} />;
 
+  const finished = data.state === "ended";
+
   const rankMove = data.prevRank != null && data.rank != null ? data.prevRank - data.rank : 0;
 
   return (
     <div className="space-y-4">
+      {finished && (
+        <Link
+          href="/results"
+          className="paper-page tilt-r block rounded-sm px-5 py-4 transition-transform hover:rotate-0"
+        >
+          <div className="text-[10px] font-bold uppercase tracking-[0.28em] text-[var(--color-ink-soft)]">
+            That is the bell
+          </div>
+          <div className="display mt-1 text-2xl">
+            <span className="paper-underline">See how it finished</span>
+          </div>
+          <p className="mt-1 text-xs text-[var(--color-ink-soft)]">
+            Final standings, how the lead changed hands, and your own session — your best call,
+            your worst, and which prices you moved.
+          </p>
+        </Link>
+      )}
+
       <div className="flex items-baseline justify-between gap-3">
         <h1 className="truncate text-lg font-semibold">{data.teamName}</h1>
         {data.rank != null && (

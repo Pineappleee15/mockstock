@@ -1,5 +1,6 @@
 "use client";
 
+import Link from "next/link";
 import { marketAction } from "@/actions/admin";
 import { ActionButton } from "@/components/action-button";
 import { Card } from "@/components/ui";
@@ -10,6 +11,7 @@ import { Card } from "@/components/ui";
  */
 export function MarketControls({ competitionId, state }: { competitionId: number; state: string }) {
   const can = (s: string[]) => s.includes(state);
+  const finished = state === "ended";
 
   return (
     <Card className="p-3">
@@ -23,7 +25,9 @@ export function MarketControls({ competitionId, state }: { competitionId: number
           <ActionButton run={() => marketAction(competitionId, "pause")}>Pause</ActionButton>
         )}
         {can(["paused"]) && (
-          <ActionButton variant="buy" run={() => marketAction(competitionId, "resume")}>Resume</ActionButton>
+          <ActionButton variant="buy" run={() => marketAction(competitionId, "resume")}>
+            Resume
+          </ActionButton>
         )}
         {can(["open", "paused"]) && (
           <ActionButton
@@ -42,9 +46,20 @@ export function MarketControls({ competitionId, state }: { competitionId: number
             End competition
           </ActionButton>
         )}
+        {finished && (
+          <Link
+            href="/results"
+            className="inline-flex items-center rounded-md bg-accent px-3 py-2 text-sm font-semibold text-black hover:bg-accent/90"
+          >
+            Open the results →
+          </Link>
+        )}
       </div>
+
       <p className="mt-2 text-[11px] text-muted">
-        Pausing freezes prices as well as trading — the price clock only advances while the market is open.
+        {finished
+          ? "The leaderboard is frozen. Put the results page on the projector — it shows the podium, how the lead changed hands, and the winner's session."
+          : "Pausing freezes prices as well as trading — the price clock only advances while the market is open."}
       </p>
     </Card>
   );
