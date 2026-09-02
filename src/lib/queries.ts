@@ -189,7 +189,19 @@ export interface NewsRow {
   impactBps: number; publishedAt: string; symbols: string[];
 }
 
-export async function newsFeed(comp: LiveCompetition, limit = 20): Promise<NewsRow[]> {
+/**
+ * How long a headline stays on the scrolling ticker.
+ *
+ * The ticker is for "what just happened", not a history. Without a window, an
+ * hour-old story keeps scrolling as though it were current — which is worst for
+ * a cryptic clue, where participants cannot tell which one is live. Full history
+ * stays available on the News page.
+ */
+export const TICKER_WINDOW_MINUTES = 15;
+
+export async function newsFeed(
+  comp: LiveCompetition, limit = 20, sinceMinutes?: number,
+): Promise<NewsRow[]> {
   const rows = await db.execute(sql`
     SELECT n.id, n.headline, n.body, n.impact_bps, n.published_at,
            COALESCE(ARRAY_AGG(s.symbol ORDER BY s.symbol) FILTER (WHERE s.symbol IS NOT NULL), '{}') AS symbols
@@ -197,6 +209,9 @@ export async function newsFeed(comp: LiveCompetition, limit = 20): Promise<NewsR
     LEFT JOIN news_event_stocks ns ON ns.news_event_id = n.id
     LEFT JOIN stocks s ON s.id = ns.stock_id
     WHERE n.competition_id = ${comp.id}
+      ${sinceMinutes
+        ? sql`AND n.published_at > now() - (${sinceMinutes} * interval '1 minute')`
+        : sql``}
     GROUP BY n.id
     ORDER BY n.published_at DESC
     LIMIT ${limit}

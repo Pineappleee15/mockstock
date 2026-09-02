@@ -9,6 +9,7 @@ import { logout } from "@/actions/auth";
 const NAV = [
   { href: "/dashboard", label: "Portfolio" },
   { href: "/market", label: "Market" },
+  { href: "/news", label: "News" },
   { href: "/leaderboard", label: "Leaderboard" },
   { href: "/trades", label: "History" },
 ];
