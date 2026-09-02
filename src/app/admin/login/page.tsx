@@ -13,7 +13,7 @@ export default async function AdminLoginPage() {
       <div className="w-full max-w-sm">
         <header className="mb-6 text-center">
           <h1 className="display text-3xl">
-            Mock<span className="paper-underline">Stock</span>
+            BC<span className="paper-underline">X</span>
           </h1>
           <p className="mt-1 text-[11px] font-semibold uppercase tracking-[0.3em] text-[var(--color-ink-soft)]">
             Control room

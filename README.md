@@ -1,4 +1,4 @@
-# MockStock
+# BCX — BlueChip Exchange
 
 Paper trading competition platform for running mock stock events at a college
 finance cell. Prices are fully simulated and admin-controlled — there is no live
@@ -18,6 +18,11 @@ Team buying and selling is the primary driver. Each stock carries a slow
 and a market price that order flow pushes away from the anchor and that decays
 back toward it. See [PLAN.md](PLAN.md) §3 — the pullback half-life is the single
 most important thing to tune before a real event.
+
+The app is branded **BCX** throughout. The repository, the project folder, the
+database and the session cookie are still named `mockstock` on purpose: renaming
+those would mean reconnecting GitHub, Render and Neon and signing every team out,
+for no visible benefit.
 
 ## Documents
 

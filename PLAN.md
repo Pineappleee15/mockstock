@@ -1,4 +1,4 @@
-# MockStock — Architecture Plan
+# BCX — Architecture Plan
 
 Status: **awaiting approval**. Nothing is built yet.
 

@@ -1,4 +1,4 @@
-# MockStock — Database Schema
+# BCX — Database Schema
 
 Postgres 16+. Written as SQL for clarity; the actual source of truth will be
 `src/db/schema.ts` (Drizzle), with generated migrations in `drizzle/`.

@@ -189,7 +189,7 @@ function NewCompetition({
           <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
             <label className="block">
               <span className="mb-1 block text-xs font-medium text-muted">Name</span>
-              <Input name="name" required placeholder="Finance Cell Mock Stock 2026" />
+              <Input name="name" required placeholder="BlueChip Exchange 2026" />
             </label>
             <label className="block">
               <span className="mb-1 block text-xs font-medium text-muted">Mode</span>

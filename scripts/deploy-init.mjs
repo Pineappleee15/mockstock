@@ -109,7 +109,7 @@ async function seedDemo(sql) {
 
   const [comp] = await sql`
     INSERT INTO competitions (name, mode, state, starting_cash_paise, session_minutes, starts_at, ends_at)
-    VALUES ('MockStock Demo Event', 'event', 'draft', ${startingCash}, 180,
+    VALUES ('Demo Event', 'event', 'draft', ${startingCash}, 180,
             now(), now() + interval '3 hours')
     RETURNING id
   `;

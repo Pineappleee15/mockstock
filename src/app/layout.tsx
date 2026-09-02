@@ -2,8 +2,8 @@ import type { Metadata, Viewport } from "next";
 import "./globals.css";
 
 export const metadata: Metadata = {
-  title: "MockStock",
-  description: "Paper trading competition platform",
+  title: "BCX · BlueChip Exchange",
+  description: "BlueChip Exchange — paper trading competition platform",
 };
 
 export const viewport: Viewport = {

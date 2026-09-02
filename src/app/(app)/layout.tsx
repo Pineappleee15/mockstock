@@ -47,7 +47,7 @@ export default async function AppLayout({ children }: { children: React.ReactNod
           <div className="flex min-w-0 items-center gap-3">
             <Link href="/dashboard"
               className="shrink-0 text-sm font-bold tracking-[0.02em] text-text">
-              Mock<span className="text-accent">Stock</span>
+              BC<span className="text-accent">X</span>
             </Link>
             {comp && <MarketState state={comp.state} />}
           </div>

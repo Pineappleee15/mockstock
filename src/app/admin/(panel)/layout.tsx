@@ -26,7 +26,7 @@ export default async function AdminLayout({ children }: { children: React.ReactN
       <header className="glass sticky top-0 z-20">
         <div className="mx-auto flex max-w-7xl items-center justify-between px-3 py-2">
           <Link href="/admin" className="text-sm font-bold">
-            Mock<span className="text-accent">Stock</span> <span className="text-muted">admin</span>
+            BC<span className="text-accent">X</span> <span className="text-muted">admin</span>
           </Link>
           <div className="flex items-center gap-3 text-xs text-muted">
             <span>{actor.label}</span>

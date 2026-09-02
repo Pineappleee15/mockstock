@@ -1,4 +1,4 @@
-# Deploying MockStock
+# Deploying BCX
 
 Two routes. Pick one.
 

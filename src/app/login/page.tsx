@@ -18,13 +18,14 @@ export default async function LoginPage() {
       <div className="w-full max-w-sm">
         <header className="mb-7 text-center">
           <p className="text-[11px] font-semibold uppercase tracking-[0.35em] text-[var(--color-ink-soft)]">
-            Bluechip presents
+            The Bluechip Society
           </p>
-          <h1 className="display mt-2 text-5xl leading-[0.9] sm:text-6xl">
-            Mock
-            <br />
-            <span className="paper-underline">Stock</span>
+          <h1 className="display mt-2 text-7xl leading-none sm:text-8xl">
+            <span className="paper-underline">BCX</span>
           </h1>
+          <p className="display mt-2 text-sm tracking-[0.28em] text-[var(--color-ink-soft)]">
+            BlueChip Exchange
+          </p>
           {comp && (
             <p className="mt-3 text-sm text-[var(--color-ink-soft)]">{comp.name}</p>
           )}

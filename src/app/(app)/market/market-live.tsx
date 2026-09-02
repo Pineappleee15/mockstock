@@ -71,7 +71,7 @@ export function MarketLive() {
         <Card className="hidden flex-wrap items-baseline justify-between gap-x-4 gap-y-1 px-3 py-2 sm:flex">
           <div className="flex items-baseline gap-2">
             <span className="text-[11px] font-semibold uppercase tracking-[0.16em] text-muted">
-              Bluechip {data.index.constituents}
+              BCX {data.index.constituents}
             </span>
             <span className="num text-lg font-semibold">{data.index.value.toFixed(2)}</span>
             <Change bps={data.index.returnBps} className="text-sm" />

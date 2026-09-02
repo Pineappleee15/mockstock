@@ -47,7 +47,7 @@ async function main() {
   const startingCash = rupeesToPaise(1_000_000); // Rs 10,00,000
 
   const [comp] = await db.insert(competitions).values({
-    name: "MockStock Demo Event",
+    name: "Demo Event",
     mode: "event",
     state: "draft",
     startingCashPaise: startingCash,

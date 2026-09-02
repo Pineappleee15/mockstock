@@ -52,7 +52,7 @@ export default async function ResultsPage() {
       <div className="mx-auto max-w-3xl">
         <header className="mb-9 text-center">
           <p className="text-[11px] font-semibold uppercase tracking-[0.35em] text-[var(--color-ink-soft)]">
-            Bluechip · {final ? "Final standings" : "Standing so far"}
+            BlueChip Exchange · {final ? "Final standings" : "Standing so far"}
           </p>
           <h1 className="display mt-2 text-4xl leading-tight sm:text-5xl">
             <span className="paper-underline">{comp.name}</span>

@@ -49,7 +49,7 @@ export function Lobby({ teamName, rules }: { teamName: string; rules: LobbyRules
   return (
     <div className="paper-page tilt-l mx-auto max-w-2xl rounded-sm px-6 py-8 sm:px-10 sm:py-10">
       <p className="text-[11px] font-semibold uppercase tracking-[0.35em] text-[var(--color-ink-soft)]">
-        Bluechip · {rules.competitionName}
+        BCX · {rules.competitionName}
       </p>
       <h1 className="display mt-2 text-3xl leading-tight sm:text-4xl">
         <span className="paper-underline">{teamName}</span>
