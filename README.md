@@ -26,6 +26,7 @@ most important thing to tune before a real event.
 | [PLAN.md](PLAN.md) | Architecture, the price engine, and how each correctness requirement is met |
 | [SCHEMA.md](SCHEMA.md) | Full database schema with the reasoning behind each table |
 | [RUNBOOK.md](RUNBOOK.md) | How to set up an event, what to do 30 minutes before, what to do when it breaks |
+| [DEPLOY.md](DEPLOY.md) | Getting a public URL on Railway so your team can use it from their phones |
 
 ## Quick start
 
