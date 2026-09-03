@@ -95,7 +95,8 @@ export function FundamentalsCard({
       </div>
 
       <p className="mt-2 text-[10px] leading-snug text-muted/70">
-        Analysts are often right and sometimes badly wrong. The accounts are the more reliable read.
+        Analysts are wrong often enough that following them is no substitute for reading the
+        numbers above. Treat this as one opinion, not an answer.
       </p>
     </Card>
   );

@@ -108,6 +108,23 @@ export interface Fundamentals {
 const RATINGS = ["Sell", "Reduce", "Hold", "Buy", "Strong buy"] as const;
 
 /**
+ * Spread of the analyst's error.
+ *
+ * A rating is a one-glance answer, so if it were nearly as good as reading the
+ * accounts nobody would read the accounts. Measured over 400 simulated
+ * sessions, following the analysts against doing the work:
+ *
+ *   0.055   6.7% vs 9.0%   three quarters of the reward for none of the effort
+ *   0.12    4.9% vs 9.0%
+ *   0.18    3.1% vs 9.0%   a real signal, worth about a third
+ *   0.26    2.0% vs 9.0%   barely better than guessing
+ *
+ * 0.18 keeps the analyst worth listening to without making research optional.
+ * Override with BCX_ANALYST_NOISE when re-tuning.
+ */
+export const ANALYST_NOISE = Number(process.env.BCX_ANALYST_NOISE ?? 0.18);
+
+/**
  * Derive a fundamentals card from the stock's real hidden parameters.
  *
  * Everything here is a genuine function of drift, volatility or liquidity, with
@@ -155,8 +172,15 @@ export function fundamentalsFor(
   const hi = Math.max(...history);
   const pad = Math.round((hi - lo) * 0.06) + 1;
 
-  // Analyst target: drift, seen through a cloudier lens than the fundamentals.
-  const analystErr = gaussian(seed, 7, STREAM.analyst) * 0.055;
+  /*
+   * Analyst target: drift seen through a much cloudier lens than the accounts.
+   *
+   * Deliberately weak. A rating is a one-glance answer, so if it were nearly as
+   * good as reading the accounts nobody would read the accounts — which is the
+   * whole point of the exercise. Tuned so that following the analysts beats
+   * guessing but is a fraction of what the numbers pay.
+   */
+  const analystErr = gaussian(seed, 7, STREAM.analyst) * ANALYST_NOISE;
   const analystTargetPaise = Math.max(1, Math.round(pricePaise * (1 + q * 0.14 + analystErr)));
   const impliedUpside = (analystTargetPaise - pricePaise) / pricePaise;
   const ratingIndex = Math.max(0, Math.min(4, Math.round(2 + impliedUpside / 0.05)));

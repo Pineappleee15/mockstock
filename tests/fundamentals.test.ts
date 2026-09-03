@@ -74,9 +74,20 @@ describe("history is evidence, not decoration", () => {
 });
 
 describe("the fundamentals card carries real signal", () => {
-  it("revenue growth tracks drift strongly", () => {
+  it("revenue growth tracks drift strongly — the accounts are the reliable read", () => {
     const u = universe(11);
     expect(corr(u.map((s) => s.drift), u.map((s) => s.f.revenueGrowthPct))).toBeGreaterThan(0.85);
+  });
+
+  it("the accounts are a better guide than the analyst", () => {
+    let accountsWins = 0;
+    for (let c = 1; c <= 30; c++) {
+      const u = universe(c);
+      const accounts = corr(u.map((s) => s.drift), u.map((s) => s.f.revenueGrowthPct));
+      const analyst = corr(u.map((s) => s.drift), u.map((s) => s.f.analystTargetPaise / s.price));
+      if (accounts > analyst) accountsWins++;
+    }
+    expect(accountsWins).toBeGreaterThan(25);
   });
 
   it("beta tracks volatility, not drift", () => {
@@ -90,7 +101,7 @@ describe("the fundamentals card carries real signal", () => {
     expect(corr(u.map((s) => s.drift), u.map((s) => s.f.debtToEquity))).toBeLessThan(-0.7);
   });
 
-  it("analyst view is right more often than not, but not reliable", () => {
+  it("analyst view is a weak signal, not a substitute for the accounts", () => {
     // Averaged across many competitions so a single lucky draw cannot pass it.
     const cs: number[] = [];
     for (let c = 1; c <= 30; c++) {
@@ -98,8 +109,10 @@ describe("the fundamentals card carries real signal", () => {
       cs.push(corr(u.map((s) => s.drift), u.map((s) => s.f.analystTargetPaise / s.price)));
     }
     const mean = cs.reduce((a, b) => a + b, 0) / cs.length;
-    expect(mean).toBeGreaterThan(0.4);  // worth listening to
-    expect(mean).toBeLessThan(0.95);    // not gospel
+    // Deliberately weaker than the accounts: a one-glance rating that paid as
+    // well as reading the numbers would make reading the numbers pointless.
+    expect(mean).toBeGreaterThan(0.15);  // still worth something
+    expect(mean).toBeLessThan(0.7);      // nowhere near an answer
   });
 
   it("the 52-week range brackets the price", () => {

@@ -217,6 +217,30 @@ lucky, which is what keeps it a competition. Re-measure after any change:
 npx tsx scripts/signal-sim.ts --regime --drift=7
 ```
 
+### The analyst rating is deliberately unreliable
+
+The card carries an analyst target and a Strong buy / Sell rating. It is a real
+signal, and a deliberately weak one.
+
+A rating is a one-glance answer, so if it paid as well as reading the accounts
+nobody would read the accounts. Measured over 400 simulated sessions, buying the
+three names with the biggest analyst upside against buying the three with the
+best revenue growth:
+
+| Strategy | Return |
+| --- | --- |
+| Read the accounts | 9.0% |
+| Follow the analysts | 3.1% |
+| Pick at random | about 0% |
+
+So following the ratings beats guessing, and is worth about a third of doing the
+work. A team that shortcuts to the badge will finish above the guessers and
+below anyone who read the numbers, which is the lesson.
+
+`BCX_ANALYST_NOISE` overrides the spread if you want it weaker or stronger;
+0.055 makes the analysts nearly as good as research, 0.26 makes them nearly
+useless.
+
 ### First mover advantage
 
 Orders inside the same tick no longer all fill at one price. Each fill nudges
