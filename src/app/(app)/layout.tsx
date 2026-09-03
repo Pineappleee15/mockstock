@@ -5,7 +5,6 @@ import { activeCompetition } from "@/lib/queries";
 import { NewsTicker } from "@/components/news-ticker";
 import { TabBar } from "@/components/tab-bar";
 import { NewsRail } from "@/components/news-rail";
-import { MoodGround } from "@/components/mood-ground";
 import { ensureTicker } from "@/lib/boot";
 import { logout } from "@/actions/auth";
 
@@ -79,7 +78,6 @@ export default async function AppLayout({ children }: { children: React.ReactNod
       </div>
 
       <TabBar />
-      <MoodGround />
     </div>
   );
 }
