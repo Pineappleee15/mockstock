@@ -2,6 +2,7 @@ import { computeTick, pullbackBps } from "../src/lib/engine";
 import type { EngineConfig, EngineStock } from "../src/lib/engine-types";
 import { driftFor, priceHistory, fundamentalsFor } from "../src/lib/fundamentals";
 import { seedFromString } from "../src/lib/rng";
+import { marketFactorBps } from "../src/lib/regime";
 import { DEMO_STOCKS } from "./stocks-demo";
 
 /**
@@ -20,6 +21,13 @@ import { DEMO_STOCKS } from "./stocks-demo";
 
 const EVENTS = 400;
 const HOURS = 3;
+// Regimes add a large common factor. The question is whether stock-picking
+// still pays once the whole market is lurching about.
+const WITH_REGIME = process.argv.includes("--regime");
+/** How far apart the good and bad companies are, in bps of drift per minute. */
+const DRIFT_SPREAD = Number(
+  process.argv.find((a) => a.startsWith("--drift="))?.split("=")[1] ?? 5,
+);
 
 const cfg: EngineConfig = {
   tickIntervalSeconds: 5,
@@ -38,24 +46,34 @@ const pullback = pullbackBps(cfg);
 function runEvent(compId: number) {
   const picks = DEMO_STOCKS.map((s) => {
     const price = Math.round(s.price * 100);
-    const drift = driftFor(compId, s.symbol);
+    const drift = driftFor(compId, s.symbol, DRIFT_SPREAD);
     const history = priceHistory(compId, s.symbol, price, s.volBps, drift);
     const f = fundamentalsFor(compId, s.symbol, price, s.volBps, drift, 1500, history);
     return { symbol: s.symbol, price, vol: s.volBps, drift, f };
   });
+
+  // The market move is shared, so it is computed once and every stock feels it
+  // through its beta — exactly as the live engine does it.
+  const factors = WITH_REGIME
+    ? Array.from({ length: TICKS + 1 }, (_, k) =>
+        marketFactorBps(compId, k, cfg.tickIntervalSeconds, TICKS, 6000))
+    : null;
 
   // Run each stock's path to the close and record its return.
   const ret = new Map<string, number>();
   for (const p of picks) {
     const stock: EngineStock = {
       id: 0, seed: seedFromString(`${compId}:${p.symbol}`) % 2_000_000_000,
-      volatilityBps: p.vol, driftBps: p.drift, liquidity: 1500, beta: 1,
+      volatilityBps: p.vol, driftBps: p.drift, liquidity: 1500, beta: p.f.beta,
       circuitLimitBps: null, sessionOpenPaise: null, halted: false,
     };
     let state = { pricePaise: p.price, anchorPaise: p.price, gapBps: 0 };
     for (let k = 1; k <= TICKS; k++) {
+      const f = factors?.[k];
+      cfg.regimeVolMultiplier = f ? f.regime.volMultiplier : 1;
       state = computeTick(
-        { tickIndex: k, state, stock, netQty: 0, newsDeltaBps: 0 }, cfg, pullback).state;
+        { tickIndex: k, state, stock, netQty: 0, newsDeltaBps: 0, marketBps: f?.bps ?? 0 },
+        cfg, pullback).state;
     }
     ret.set(p.symbol, (state.pricePaise - p.price) / p.price);
   }

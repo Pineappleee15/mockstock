@@ -32,7 +32,7 @@ export async function recomputeLeaderboard(
         COALESCE(SUM(h.quantity::bigint * l.price_paise), 0)::bigint AS invested,
         COALESCE(SUM(h.quantity::bigint * (l.price_paise - h.avg_cost_paise)), 0)::bigint AS unrealised
       FROM portfolios p
-      LEFT JOIN holdings h ON h.portfolio_id = p.id AND h.quantity > 0
+      LEFT JOIN holdings h ON h.portfolio_id = p.id AND h.quantity <> 0
       LEFT JOIN latest   l ON l.stock_id = h.stock_id
       WHERE p.competition_id = ${competitionId}
       GROUP BY p.id, p.team_id, p.cash_paise, p.realised_pnl_paise, p.trade_count

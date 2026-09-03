@@ -124,12 +124,16 @@ export function fundamentalsFor(
   competitionId: number, symbol: string,
   pricePaise: number, volatilityBps: number, driftBps: number, liquidity: number,
   history: number[],
+  /** Must match the spread the drift was drawn from, or the card cannot tell a
+   *  very good company from a merely good one — every strong stock would clamp
+   *  to the same figures. */
+  driftSpreadBps = 5,
 ): Fundamentals {
   const seed = hash32(competitionId, symbolSeed(symbol), STREAM.quality);
   const noise = (i: number, spread: number) => (uniform(seed, i, STREAM.quality) - 0.5) * 2 * spread;
 
   // Drift normalised to roughly -1..+1 — "how good is this company".
-  const q = Math.max(-1, Math.min(1, driftBps / 5));
+  const q = Math.max(-1, Math.min(1, driftBps / Math.max(1, driftSpreadBps)));
 
   const revenueGrowthPct = round1(6 + q * 16 + noise(1, 3));
   const profitMarginPct = round1(11 + q * 7 + noise(2, 2.5));

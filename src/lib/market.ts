@@ -267,8 +267,10 @@ export async function voidTrade(actor: Admin, tradeId: number, reason: string): 
     if (cashAfter < 0) {
       throw new Error("VOID_WOULD_OVERDRAW: team has already spent the proceeds. Adjust cash instead.");
     }
-    if (qtyAfter < 0) {
-      throw new Error("VOID_WOULD_SHORT: team has already sold those shares. Adjust cash instead.");
+    // Unwinding a trade that opened or closed a short means rebuilding an
+    // average sale price from history. Refuse rather than guess at it.
+    if (heldQty < 0 || qtyAfter < 0) {
+      throw new Error("VOID_INVOLVES_SHORT: this team is short that stock. Adjust cash instead.");
     }
 
     await tx.update(trades)

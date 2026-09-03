@@ -74,6 +74,30 @@ export const competitions = pgTable("competitions", {
   /** Whether queued news publishes itself when its tick arrives. */
   autoNewsEnabled: boolean("auto_news_enabled").notNull().default(true),
 
+  /**
+   * Short selling. Off by default.
+   *
+   * Deliberately has no price impact: a short sale does not feed the order-flow
+   * engine, so shorting cannot start a cascade of falling prices forcing more
+   * selling. The loss is bounded by the circuit breaker rather than by margin
+   * machinery — a stock cannot move further than the circuit limit before it
+   * halts, so a short capped at the concentration cap can only lose a knowable
+   * fraction of a portfolio.
+   */
+  shortSellingEnabled: boolean("short_selling_enabled").notNull().default(false),
+
+  /**
+   * How far apart the good and bad companies are, in bps of drift per minute.
+   *
+   * This is the skill-versus-luck dial. Everything a team can research —
+   * revenue growth, the analyst view, the price history — is derived from this
+   * drift, so widening it makes the reading pay more reliably. Measured over
+   * 400 simulated sessions: 5 has research beating a random pick 75% of the
+   * time, 7 gets to 86%, and 9 reaches 88% while starting to make the result a
+   * foregone conclusion.
+   */
+  driftSpreadBps: integer("drift_spread_bps").notNull().default(7),
+
   currentTick: integer("current_tick").notNull().default(0),
   lastTickAt: timestamp("last_tick_at", { withTimezone: true }),
   sessionOpenedAt: timestamp("session_opened_at", { withTimezone: true }),
@@ -129,6 +153,17 @@ export const stocks = pgTable("stocks", {
   seed: integer("seed").notNull(),
 
   sessionOpenPaise: bigint("session_open_paise", { mode: "number" }),
+
+  /**
+   * Slippage accumulated within the current tick, in basis points.
+   *
+   * Every fill nudges this, so the next order on the same stock in the same
+   * tick pays slightly worse. It is what gives the first mover an edge instead
+   * of everyone in a five-second window getting an identical price. Reset
+   * whenever `intraTickAt` is behind the competition clock.
+   */
+  intraTickBps: integer("intra_tick_bps").notNull().default(0),
+  intraTickAt: integer("intra_tick_at").notNull().default(-1),
   createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
 }, (t) => [uniqueIndex("stocks_comp_symbol_uq").on(t.competitionId, t.symbol)]);
 
@@ -223,13 +258,14 @@ export const holdings = pgTable("holdings", {
     .references(() => portfolios.id, { onDelete: "cascade" }),
   stockId: bigint("stock_id", { mode: "number" }).notNull()
     .references(() => stocks.id, { onDelete: "cascade" }),
+  /** Negative when the team is short. */
   quantity: integer("quantity").notNull(),
+  /** Average cost for a long, average sale price for a short. Always positive. */
   avgCostPaise: bigint("avg_cost_paise", { mode: "number" }).notNull(),
   costResidual: bigint("cost_residual", { mode: "number" }).notNull().default(0),
   updatedAt: timestamp("updated_at", { withTimezone: true }).notNull().defaultNow(),
 }, (t) => [
   uniqueIndex("holdings_pf_stock_uq").on(t.portfolioId, t.stockId),
-  check("holdings_qty_nonneg", sql`${t.quantity} >= 0`),
 ]);
 
 /**
@@ -295,6 +331,15 @@ export const trades = pgTable("trades", {
   cashDeltaPaise: bigint("cash_delta_paise", { mode: "number" }).notNull(),
   avgCostAtFill: bigint("avg_cost_at_fill", { mode: "number" }),
   realisedPnlPaise: bigint("realised_pnl_paise", { mode: "number" }).notNull().default(0),
+
+  /**
+   * Signed quantity that counts toward order-flow pricing.
+   *
+   * Equals the trade for ordinary buying and selling, and zero for anything
+   * that opens or closes a short — shorting is deliberately flow-neutral, so it
+   * cannot start a cascade of falling prices forcing yet more selling.
+   */
+  flowQty: integer("flow_qty").notNull().default(0),
 
   tickIndex: integer("tick_index").notNull(),
   executedAt: timestamp("executed_at", { withTimezone: true }).notNull().defaultNow(),

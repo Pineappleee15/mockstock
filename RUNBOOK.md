@@ -174,6 +174,57 @@ competition 1 at 1.0x volatility and a 6000 market factor.
 lot of stocks. If you turn the chaos up, raise the circuit limit to 30-35% or
 you will spend the event pressing Resume.
 
+### Short selling
+
+Off by default. **Settings -> Allow short selling** turns it on, and a team can
+then sell a stock it does not own and buy it back later, profiting if the price
+falls.
+
+Two things make it safe to hand to a room of students:
+
+- **A short has no price impact.** It does not feed the order-flow engine at
+  all, so shorting cannot push a price down and trigger more shorting. No
+  cascades.
+- **The loss is bounded by the circuit breaker, not by margin calls.** A stock
+  cannot move further than the circuit limit before it halts, and a short is
+  capped by the same concentration cap as a long. There is no forced
+  liquidation to explain to anybody mid-event.
+
+Voiding a trade for a team that is short is refused: unwinding it means
+rebuilding an average sale price from history, and guessing at that would
+corrupt their books. Adjust their cash instead.
+
+### Rewarding knowledge over luck
+
+**Settings -> Skill vs luck (drift spread)** is the dial. It sets how far apart
+the good and bad companies are, and everything a team can research — revenue
+growth, the analyst view, the price history — is derived from it.
+
+Measured over 400 simulated three-hour sessions, comparing a team that buys the
+three highest-growth stocks against one picking at random:
+
+| Drift spread | Research beats a coin flip | Edge |
+| --- | --- | --- |
+| 5 | 75% of events | 6.4 points |
+| **7 (default)** | **83-86% of events** | **10 points** |
+| 9 | 88% of events | 11.8 points |
+
+Seven is the default because the diligent team wins clearly without the result
+being a foregone conclusion — roughly one event in six still goes to someone
+lucky, which is what keeps it a competition. Re-measure after any change:
+
+```bash
+npx tsx scripts/signal-sim.ts --regime --drift=7
+```
+
+### First mover advantage
+
+Orders inside the same tick no longer all fill at one price. Each fill nudges
+the price slightly for whoever is next on that stock, so being early is worth
+something — about 0.16% across five buyers of the same size. Enough to reward
+paying attention, not enough to punish anyone on a slow phone. It resets every
+tick.
+
 ### What teams have to analyse
 
 Trading is not only about waiting for news. Each stock carries a hidden **drift**

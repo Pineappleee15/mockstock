@@ -75,6 +75,8 @@ const configSchema = z.object({
   liquidityMultiplierBps: z.coerce.number().int().min(500).max(100000),
   shockChanceBps: z.coerce.number().int().min(0).max(500),
   autoNewsEnabled: z.coerce.boolean(),
+  shortSellingEnabled: z.coerce.boolean(),
+  driftSpreadBps: z.coerce.number().int().min(0).max(20),
 });
 
 export async function updateCompetition(competitionId: number, form: FormData): Promise<ActionResult> {
@@ -101,6 +103,8 @@ export async function updateCompetition(competitionId: number, form: FormData): 
       liquidityMultiplierBps: form.get("liquidityMultiplierBps"),
       shockChanceBps: form.get("shockChanceBps"),
       autoNewsEnabled: form.get("autoNewsEnabled") === "on",
+      shortSellingEnabled: form.get("shortSellingEnabled") === "on",
+      driftSpreadBps: form.get("driftSpreadBps"),
     });
     if (!parsed.success) {
       return { ok: false, error: parsed.error.issues.map((i) => `${i.path.join(".")}: ${i.message}`).join("; ") };
@@ -263,6 +267,9 @@ export async function importStocks(competitionId: number, form: FormData): Promi
       return { ok: false, error: "No valid rows. Need at least symbol, name and starting_price." };
     }
 
+    const comp = await db.query.competitions.findFirst({ where: eq(competitions.id, competitionId) });
+    if (!comp) return { ok: false, error: "Competition not found." };
+
     let created = 0;
     const skipped: string[] = [];
     for (const r of rows) {
@@ -276,7 +283,7 @@ export async function importStocks(competitionId: number, form: FormData): Promi
           // is derived from the competition and symbol rather than left flat.
           driftBps: Number.isFinite(r.driftBps) && r.driftBps !== 0
             ? Math.round(r.driftBps)
-            : driftFor(competitionId, r.symbol),
+            : driftFor(competitionId, r.symbol, comp.driftSpreadBps),
           liquidity: r.liquidity > 0
             ? Math.round(r.liquidity)
             : Math.max(10, Math.round(LIQUIDITY_NOTIONAL_PAISE / pricePaise)),
@@ -525,6 +532,9 @@ export async function loadStandardUniverse(competitionId: number): Promise<Actio
   try {
     const admin = await requireAdmin();
 
+    const comp = await db.query.competitions.findFirst({ where: eq(competitions.id, competitionId) });
+    if (!comp) return { ok: false, error: "Competition not found." };
+
     const existing = await db.query.stocks.findMany({
       where: eq(stocks.competitionId, competitionId),
     });
@@ -546,7 +556,7 @@ export async function loadStandardUniverse(competitionId: number): Promise<Actio
           sector: s.sector,
           startingPricePaise: pricePaise,
           volatilityBps: s.volBps,
-          driftBps: driftFor(competitionId, s.symbol),
+          driftBps: driftFor(competitionId, s.symbol, comp.driftSpreadBps),
           liquidity: Math.max(10, Math.round(notionalFor(s.sector) / pricePaise)),
           seed: seedFromString(`${competitionId}:${s.symbol}`) % 2_000_000_000,
         };

@@ -8,7 +8,7 @@ import { audit } from "./audit";
 export type RejectCode =
   | "MARKET_CLOSED" | "STOCK_HALTED" | "UNKNOWN_SYMBOL" | "INVALID_QUANTITY"
   | "INSUFFICIENT_CASH" | "INSUFFICIENT_HOLDINGS" | "CONCENTRATION_CAP"
-  | "RATE_LIMITED" | "NO_PRICE";
+  | "RATE_LIMITED" | "NO_PRICE" | "SHORTING_DISABLED";
 
 export type OrderResult =
   | {
@@ -27,6 +27,26 @@ export interface OrderRequest {
   idempotencyKey: string;
 }
 
+/**
+ * How much a single fill moves the price for the next order in the same tick.
+ *
+ * A quarter of the per-tick impact coefficient, so being first is worth
+ * something without turning a five-second window into a race that punishes
+ * anyone on a slow phone. Capped so a burst cannot run the price away.
+ */
+const FIRST_MOVER_COEFF_BPS = 25;
+const MAX_INTRA_TICK_BPS = 120;
+
+/** Slippage this order leaves behind for whoever comes next. */
+export function intraTickSlipBps(
+  quantity: number, side: "buy" | "sell", liquidity: number, enabled: boolean,
+): number {
+  if (!enabled || quantity <= 0) return 0;
+  const magnitude = Math.sqrt(quantity / Math.max(1, liquidity));
+  const signed = (side === "buy" ? 1 : -1) * FIRST_MOVER_COEFF_BPS * magnitude;
+  return Math.round(Math.max(-MAX_INTRA_TICK_BPS, Math.min(MAX_INTRA_TICK_BPS, signed)));
+}
+
 export const REJECT_DETAIL: Record<RejectCode, string> = {
   MARKET_CLOSED: "The market is not open for trading right now.",
   STOCK_HALTED: "Trading in this stock is halted.",
@@ -34,6 +54,7 @@ export const REJECT_DETAIL: Record<RejectCode, string> = {
   INVALID_QUANTITY: "Quantity must be a whole number of at least 1.",
   INSUFFICIENT_CASH: "Not enough cash for this order including fees.",
   INSUFFICIENT_HOLDINGS: "You do not hold that many shares.",
+  SHORTING_DISABLED: "Short selling is off. You can only sell what you hold.",
   CONCENTRATION_CAP: "This would put too much of your portfolio in one stock.",
   RATE_LIMITED: "Too many orders in the last minute. Slow down.",
   NO_PRICE: "No price has been published for this stock yet.",
@@ -60,7 +81,7 @@ async function withinConcentrationCap(
     LEFT JOIN price_ticks pt
       ON pt.stock_id = h.stock_id AND pt.tick_index = ${tickIndex}
      AND pt.competition_id = ${competitionId}
-    WHERE h.portfolio_id = ${portfolioId} AND h.quantity > 0
+    WHERE h.portfolio_id = ${portfolioId} AND h.quantity <> 0
   `);
 
   let othersValue = 0;
@@ -71,8 +92,11 @@ async function withinConcentrationCap(
 
   const positionValue = newQty * thisPrice;
   const portfolioValue = cashAfter + othersValue + positionValue;
-  if (portfolioValue <= 0) return true;
-  return (positionValue * BPS) / portfolioValue <= capBps;
+  if (portfolioValue <= 0) return false;
+  // Absolute exposure: a 40% short is the same concentration of risk as a 40%
+  // long. It is also what bounds the downside, since the circuit breaker caps
+  // how far the stock can move against it.
+  return (Math.abs(positionValue) * BPS) / portfolioValue <= capBps;
 }
 
 /** Rebuild the result of an order we have already executed, for an idempotent replay. */
@@ -174,13 +198,29 @@ export async function placeOrder(req: OrderRequest): Promise<OrderResult> {
     const recent = Number((rl as unknown as Array<{ n: number }>)[0]?.n ?? 0);
     if (recent >= comp.orderRateLimitPerMin) return reject("RATE_LIMITED");
 
-    /* 5. The server reads the price. The client never sends one. */
+    /* 5. The server reads the price. The client never sends one.
+     *
+     * The stock row is locked here so orders on the same stock queue up and each
+     * sees the slippage the one before it left. That is what makes being first
+     * worth something. Teams never contend with each other on their portfolios,
+     * only on a stock they are all trading, which is the honest place for it.
+     */
+    const stockRows = await tx.execute(sql`
+      SELECT intra_tick_bps, intra_tick_at FROM stocks WHERE id = ${stock.id} FOR UPDATE
+    `);
+    const lockedStock = (stockRows as unknown as Array<Record<string, unknown>>)[0];
+    const staleTick = Number(lockedStock?.intra_tick_at ?? -1) !== comp.currentTick;
+    const intraBefore = staleTick ? 0 : Number(lockedStock?.intra_tick_bps ?? 0);
+
     const priceRow = await tx.query.priceTicks.findFirst({
       where: and(eq(priceTicks.stockId, stock.id), eq(priceTicks.tickIndex, comp.currentTick)),
     });
-    const midPrice = priceRow?.pricePaise ?? stock.startingPricePaise;
-    if (!midPrice || midPrice <= 0) return reject("NO_PRICE");
+    const tickPrice = priceRow?.pricePaise ?? stock.startingPricePaise;
+    if (!tickPrice || tickPrice <= 0) return reject("NO_PRICE");
 
+    // Everyone in this tick trades off the same published price, shifted by
+    // whatever has already been done to it inside the tick.
+    const midPrice = Math.max(1, Math.round(tickPrice * (1 + intraBefore / BPS)));
     const fillPrice = applySpread(midPrice, req.side, comp.spreadBps);
     const gross = fillPrice * req.quantity;
     const brokerage = brokerageFor(gross, comp.brokerageBps);
@@ -188,34 +228,98 @@ export async function placeOrder(req: OrderRequest): Promise<OrderResult> {
     const existing = await tx.query.holdings.findFirst({
       where: and(eq(holdings.portfolioId, portfolioId), eq(holdings.stockId, stock.id)),
     });
+    // Negative means the team is short this stock.
     const heldQty = existing?.quantity ?? 0;
 
     let realisedPnl = 0;
     let cashDelta = 0;
-    let newQty = heldQty;
+    let newQty = heldQty + (req.side === "buy" ? req.quantity : -req.quantity);
     let newAvg = existing?.avgCostPaise ?? 0;
     let newResidual = existing?.costResidual ?? 0;
 
+    /*
+     * Positions can be negative, so an order may do two things at once: a buy
+     * while short both closes the short and opens a long, and a sell larger
+     * than the holding both closes the long and opens a short. Each half is
+     * handled explicitly rather than hoping one formula covers both.
+     *
+     * `avgCostPaise` is the average cost of a long or the average sale price of
+     * a short; it is always positive and its meaning follows the sign of the
+     * quantity.
+     */
+    const longHeld = Math.max(0, heldQty);
+    const shortHeld = Math.max(0, -heldQty);
+
     if (req.side === "buy") {
       if (cash < gross + brokerage) return reject("INSUFFICIENT_CASH");
+
       const capOk = await withinConcentrationCap(
         tx, portfolioId, competitionId, comp.currentTick, stock.id,
-        heldQty + req.quantity, cash - gross - brokerage, comp.concentrationCapBps, midPrice,
+        newQty, cash - gross - brokerage, comp.concentrationCapBps, midPrice,
       );
       if (!capOk) return reject("CONCENTRATION_CAP");
 
+      // Whatever closes a short is realised at the difference between the price
+      // it was sold at and the price paid to buy it back.
+      const covered = Math.min(req.quantity, shortHeld);
+      realisedPnl = (newAvg - fillPrice) * covered;
       cashDelta = -(gross + brokerage);
-      newQty = heldQty + req.quantity;
-      const merged = mergeAverageCost(heldQty, newAvg, newResidual, req.quantity, gross);
-      newAvg = merged.avgCost;
-      newResidual = merged.residual;
+
+      if (newQty > 0 && heldQty < 0) {
+        // Flipped from short to long: what remains is bought at this fill.
+        newAvg = fillPrice;
+        newResidual = 0;
+      } else if (newQty > 0) {
+        const merged = mergeAverageCost(longHeld, newAvg, newResidual, req.quantity, gross);
+        newAvg = merged.avgCost;
+        newResidual = merged.residual;
+      } else if (newQty === 0) {
+        newAvg = 0;
+        newResidual = 0;
+      }
+      // Still short: a partial cover leaves the average sale price unchanged.
     } else {
-      if (heldQty < req.quantity) return reject("INSUFFICIENT_HOLDINGS");
-      realisedPnl = (fillPrice - newAvg) * req.quantity;
+      const canShort = comp.shortSellingEnabled;
+      if (!canShort && req.quantity > longHeld) {
+        return reject(longHeld === 0 && heldQty <= 0 ? "SHORTING_DISABLED" : "INSUFFICIENT_HOLDINGS");
+      }
+
+      if (newQty < 0) {
+        const capOk = await withinConcentrationCap(
+          tx, portfolioId, competitionId, comp.currentTick, stock.id,
+          newQty, cash + gross - brokerage, comp.concentrationCapBps, midPrice,
+        );
+        if (!capOk) return reject("CONCENTRATION_CAP");
+      }
+
+      // Whatever closes a long is realised against its cost.
+      const sold = Math.min(req.quantity, longHeld);
+      realisedPnl = (fillPrice - newAvg) * sold;
       cashDelta = gross - brokerage;
-      newQty = heldQty - req.quantity;
-      if (newQty === 0) newResidual = 0;
+
+      if (newQty < 0) {
+        const openedShort = req.quantity - sold;
+        const merged = mergeAverageCost(
+          shortHeld, shortHeld > 0 ? newAvg : 0, shortHeld > 0 ? newResidual : 0,
+          openedShort, openedShort * fillPrice,
+        );
+        newAvg = merged.avgCost;
+        newResidual = merged.residual;
+      } else if (newQty === 0) {
+        newAvg = 0;
+        newResidual = 0;
+      }
+      // Still long: a partial sale leaves the average cost unchanged.
     }
+
+    /*
+     * Order-flow impact counts ordinary buying and selling only. Anything that
+     * opens or closes a short is flow-neutral, so shorting cannot drive the
+     * price down and force more shorting.
+     */
+    const flowQty = req.side === "buy"
+      ? Math.max(0, req.quantity - Math.min(req.quantity, shortHeld))
+      : -Math.min(req.quantity, longHeld);
 
     cash += cashDelta;
 
@@ -230,8 +334,8 @@ export async function placeOrder(req: OrderRequest): Promise<OrderResult> {
       orderId: orderRow!.id, competitionId, teamId: req.teamId, stockId: stock.id,
       side: req.side, quantity: req.quantity, midPricePaise: midPrice,
       fillPricePaise: fillPrice, grossPaise: gross, brokeragePaise: brokerage,
-      cashDeltaPaise: cashDelta, avgCostAtFill: req.side === "sell" ? newAvg : null,
-      realisedPnlPaise: realisedPnl, tickIndex: comp.currentTick,
+      cashDeltaPaise: cashDelta, avgCostAtFill: existing?.avgCostPaise ?? null,
+      realisedPnlPaise: realisedPnl, flowQty, tickIndex: comp.currentTick,
     }).returning({ id: trades.id });
 
     if (existing) {
@@ -253,11 +357,23 @@ export async function placeOrder(req: OrderRequest): Promise<OrderResult> {
       updatedAt: new Date(),
     }).where(eq(portfolios.id, portfolioId));
 
+    // Slippage follows the flow, so a short leaves no mark on the price.
+    const slip = intraTickSlipBps(
+      Math.abs(flowQty), req.side, stock.liquidity, comp.orderFlowEnabled,
+    );
+    if (slip !== 0 || staleTick) {
+      await tx.update(stocks).set({
+        intraTickBps: Math.max(-MAX_INTRA_TICK_BPS, Math.min(MAX_INTRA_TICK_BPS, intraBefore + slip)),
+        intraTickAt: comp.currentTick,
+      }).where(eq(stocks.id, stock.id));
+    }
+
     await audit({ kind: "team", id: req.teamId, label: `team:${req.teamId}` }, "order.filled", {
       competitionId, entityType: "trade", entityId: tradeRow!.id,
       payload: {
         symbol: stock.symbol, side: req.side, quantity: req.quantity,
-        midPrice, fillPrice, gross, brokerage, cashAfter: cash, realisedPnl,
+        tickPrice, intraTickBps: intraBefore, midPrice, fillPrice,
+        gross, brokerage, cashAfter: cash, realisedPnl,
       },
       tx,
     });

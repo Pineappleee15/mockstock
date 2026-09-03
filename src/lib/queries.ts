@@ -124,7 +124,7 @@ export async function portfolioView(comp: LiveCompetition, teamId: number): Prom
       eq(priceTicks.stockId, holdings.stockId),
       eq(priceTicks.tickIndex, comp.currentTick),
     ))
-    .where(and(eq(holdings.portfolioId, pf.id), sql`${holdings.quantity} > 0`));
+    .where(and(eq(holdings.portfolioId, pf.id), sql`${holdings.quantity} <> 0`));
 
   const positions: PositionRow[] = rows.map((r) => {
     const price = r.pricePaise ?? r.startingPricePaise;
@@ -134,7 +134,10 @@ export async function portfolioView(comp: LiveCompetition, teamId: number): Prom
       stockId: r.stockId, symbol: r.symbol, name: r.name,
       quantity: r.quantity, avgCostPaise: r.avgCostPaise, pricePaise: price,
       marketValuePaise: mv, unrealisedPaise: unreal,
-      unrealisedBps: r.avgCostPaise > 0 ? returnBps(price, r.avgCostPaise) : 0,
+      // A short gains when the price falls, so its percentage runs the other way.
+      unrealisedBps: r.avgCostPaise > 0
+        ? returnBps(price, r.avgCostPaise) * (r.quantity < 0 ? -1 : 1)
+        : 0,
       halted: r.status === "halted",
     };
   }).sort((a, b) => b.marketValuePaise - a.marketValuePaise);

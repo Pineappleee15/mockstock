@@ -1,0 +1,1 @@
+ALTER TABLE "competitions" ADD COLUMN "drift_spread_bps" integer DEFAULT 7 NOT NULL;

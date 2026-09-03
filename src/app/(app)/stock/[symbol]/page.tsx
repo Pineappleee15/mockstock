@@ -29,7 +29,7 @@ export default async function StockPage({ params }: { params: Promise<{ symbol: 
   // itself is never sent to the client — working it out is the exercise.
   const fundamentals = fundamentalsFor(
     comp.id, stock.symbol, stock.startingPricePaise,
-    stock.volatilityBps, stock.driftBps, stock.liquidity, series,
+    stock.volatilityBps, stock.driftBps, stock.liquidity, series, comp.driftSpreadBps,
   );
 
   return (
@@ -41,6 +41,7 @@ export default async function StockPage({ params }: { params: Promise<{ symbol: 
       brokerageBps={comp.brokerageBps}
       concentrationCapBps={comp.concentrationCapBps}
       tradingOpen={comp.state === "open"}
+      shortSellingEnabled={comp.shortSellingEnabled}
       fundamentals={fundamentals}
     />
   );

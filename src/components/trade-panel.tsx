@@ -17,6 +17,7 @@ interface Props {
   spreadBps: number;
   brokerageBps: number;
   concentrationCapBps: number;
+  shortSellingEnabled: boolean;
   onFilled: (message: string) => void;
 }
 
@@ -48,11 +49,17 @@ export function TradePanel(props: Props) {
     return { fill, gross, fee, cashAfter, total: side === "buy" ? gross + fee : gross - fee };
   }, [valid, quantity, side, props.pricePaise, props.spreadBps, props.brokerageBps, props.cashPaise]);
 
+  const longHeld = Math.max(0, props.heldQty);
+  const shortHeld = Math.max(0, -props.heldQty);
+  // A sell beyond the holding opens a short, when that is allowed.
+  const opensShort = side === "sell" && valid && quantity > longHeld;
+  const covers = side === "buy" && shortHeld > 0;
+
   const disabledReason = !props.marketOpen
     ? "Market is closed"
     : props.halted
     ? "Trading halted in this stock"
-    : side === "sell" && props.heldQty === 0
+    : side === "sell" && longHeld === 0 && !props.shortSellingEnabled
     ? "You hold none of this stock"
     : null;
 
@@ -61,7 +68,9 @@ export function TradePanel(props: Props) {
   const localWarning = useMemo(() => {
     if (!preview || !valid) return null;
     if (side === "buy" && preview.total > props.cashPaise) return "Not enough cash for this order.";
-    if (side === "sell" && quantity > props.heldQty) return `You only hold ${props.heldQty}.`;
+    if (side === "sell" && quantity > longHeld && !props.shortSellingEnabled) {
+      return `You only hold ${longHeld}.`;
+    }
     if (side === "buy" && props.concentrationCapBps > 0) {
       const posAfter = props.positionValuePaise + quantity * props.pricePaise;
       if (props.portfolioValuePaise > 0 &&
@@ -76,7 +85,13 @@ export function TradePanel(props: Props) {
 
   const maxQty = side === "buy"
     ? Math.floor(props.cashPaise / Math.max(1, applySpread(props.pricePaise, "buy", props.spreadBps)))
-    : props.heldQty;
+    : props.shortSellingEnabled
+    // Selling short is bounded by the same concentration cap as going long,
+    // measured against the portfolio rather than the holding.
+    ? longHeld + Math.max(0, Math.floor(
+        (props.portfolioValuePaise * (props.concentrationCapBps / BPS)) /
+        Math.max(1, props.pricePaise)) - shortHeld)
+    : longHeld;
 
   function confirm() {
     setError(null);
@@ -130,13 +145,23 @@ export function TradePanel(props: Props) {
             </p>
           )}
 
+          {opensShort && (
+            <p className="rounded-lg bg-accent/10 px-2 py-1.5 text-[11px] leading-snug text-accent">
+              This sells {quantity - longHeld} you do not own — a short. You profit if the price
+              falls and lose if it rises, and you have to buy them back to close it.
+            </p>
+          )}
+
           <Button
             variant={side === "buy" ? "buy" : "sell"}
             className="w-full"
             disabled={!valid || !!disabledReason || !!localWarning || pending}
             onClick={() => setConfirming(true)}
           >
-            {pending ? "Placing…" : `Review ${side} order`}
+            {pending ? "Placing…"
+              : opensShort ? "Review short sale"
+              : covers ? "Review cover"
+              : `Review ${side} order`}
           </Button>
         </div>
       </Card>
@@ -144,7 +169,9 @@ export function TradePanel(props: Props) {
       {confirming && preview && (
         <ConfirmModal
           symbol={props.symbol} side={side} quantity={quantity} preview={preview}
-          pending={pending} onCancel={() => setConfirming(false)} onConfirm={confirm}
+          pending={pending}
+          label={opensShort ? "Short" : covers ? "Cover" : side === "buy" ? "Buy" : "Sell"}
+          onCancel={() => setConfirming(false)} onConfirm={confirm}
         />
       )}
     </>
@@ -166,11 +193,11 @@ function Row({ label, value, strong }: { label: string; value: string; strong?: 
  * pricing is a real possibility rather than legal boilerplate.
  */
 function ConfirmModal({
-  symbol, side, quantity, preview, pending, onCancel, onConfirm,
+  symbol, side, quantity, preview, pending, label, onCancel, onConfirm,
 }: {
   symbol: string; side: "buy" | "sell"; quantity: number;
   preview: { fill: number; gross: number; fee: number; cashAfter: number; total: number };
-  pending: boolean; onCancel: () => void; onConfirm: () => void;
+  pending: boolean; label: string; onCancel: () => void; onConfirm: () => void;
 }) {
   return (
     <div
@@ -179,7 +206,7 @@ function ConfirmModal({
     >
       <Card className="w-full max-w-sm p-4">
         <h2 className="text-base font-semibold">
-          {side === "buy" ? "Buy" : "Sell"} {quantity} {symbol}
+          {label} {quantity} {symbol}
         </h2>
 
         <div className="num mt-3 space-y-1 text-sm">

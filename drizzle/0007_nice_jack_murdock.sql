@@ -1,0 +1,1 @@
+ALTER TABLE "trades" ADD COLUMN "flow_qty" integer DEFAULT 0 NOT NULL;

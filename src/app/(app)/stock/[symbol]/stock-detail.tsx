@@ -9,6 +9,7 @@ import { TradePanel } from "@/components/trade-panel";
 import { FundamentalsCard } from "@/components/fundamentals-card";
 import { WatchStar } from "@/components/watch-star";
 import { formatRupees, formatBps } from "@/lib/money";
+import { Change as Delta } from "@/components/ui";
 import { cn } from "@/lib/cn";
 import type { MarketRow, PortfolioView } from "@/lib/queries";
 import type { Fundamentals } from "@/lib/fundamentals";
@@ -17,6 +18,7 @@ interface Props {
   symbol: string; name: string; sector: string;
   spreadBps: number; brokerageBps: number; concentrationCapBps: number;
   tradingOpen: boolean;
+  shortSellingEnabled: boolean;
   fundamentals: Fundamentals;
 }
 
@@ -118,13 +120,42 @@ export function StockDetail(props: Props) {
       )}
 
       {position && (
-        <div className="mt-5 flex flex-wrap items-baseline justify-between gap-x-5 gap-y-1 border-y border-border/60 py-3 text-[13px]">
-          <span className="text-muted">You hold</span>
-          <span className="num">{position.quantity} shares</span>
-          <span className="num text-muted">avg {formatRupees(position.avgCostPaise)}</span>
-          <span className={cn("num", position.unrealisedPaise >= 0 ? "text-up" : "text-down")}>
-            {formatRupees(position.unrealisedPaise, { sign: true })}
-          </span>
+        <div className="mt-5 border-y border-border/60 py-3">
+          <div className="flex flex-wrap items-baseline justify-between gap-x-5 gap-y-1 text-[13px]">
+            <span className="text-muted">
+              {position.quantity < 0 ? "You are short" : "You hold"}
+            </span>
+            <span className="num">{Math.abs(position.quantity)} shares</span>
+            <span className="num text-muted">
+              {position.quantity < 0 ? "sold at" : "avg"} {formatRupees(position.avgCostPaise)}
+            </span>
+            <span className={cn("num", position.unrealisedPaise >= 0 ? "text-up" : "text-down")}>
+              {formatRupees(position.unrealisedPaise, { sign: true })}
+            </span>
+          </div>
+          {/* Asked for in the notes: what this position is actually worth,
+              spelled out rather than left to be inferred from two numbers. */}
+          <div className="mt-2 grid grid-cols-2 gap-x-6 gap-y-1 text-[11px] text-muted sm:grid-cols-4">
+            <span>
+              {position.quantity < 0 ? "Cost to close" : "Market value"}{" "}
+              <span className="num text-text">{formatRupees(Math.abs(position.marketValuePaise))}</span>
+            </span>
+            <span>
+              {position.quantity < 0 ? "Received" : "Cost basis"}{" "}
+              <span className="num text-text">
+                {formatRupees(Math.abs(position.quantity) * position.avgCostPaise)}
+              </span>
+            </span>
+            <span>
+              Unrealised{" "}
+              <span className={cn("num", position.unrealisedPaise >= 0 ? "text-up" : "text-down")}>
+                {formatRupees(position.unrealisedPaise, { sign: true })}
+              </span>
+            </span>
+            <span>
+              Return <span className="num"><Delta bps={position.unrealisedBps} /></span>
+            </span>
+          </div>
         </div>
       )}
 
@@ -148,6 +179,7 @@ export function StockDetail(props: Props) {
         spreadBps={props.spreadBps}
         brokerageBps={props.brokerageBps}
         concentrationCapBps={props.concentrationCapBps}
+        shortSellingEnabled={props.shortSellingEnabled}
         onFilled={(msg: string) => { setFlash(msg); void refreshPf(); setTimeout(() => setFlash(null), 6000); }}
       />
     </div>

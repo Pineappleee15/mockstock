@@ -60,7 +60,7 @@ export async function runOneTick(competitionId: number): Promise<{ ticked: boole
     // Net signed quantity traded during the previous tick, excluding voided
     // trades. This is the primary price driver.
     const flowRows = await tx.execute<{ stock_id: string; net: string }>(sql`
-      SELECT stock_id, SUM(CASE WHEN side = 'buy' THEN quantity ELSE -quantity END)::bigint AS net
+      SELECT stock_id, SUM(flow_qty)::bigint AS net
       FROM trades
       WHERE competition_id = ${competitionId} AND tick_index = ${prevTick} AND voided_at IS NULL
       GROUP BY stock_id

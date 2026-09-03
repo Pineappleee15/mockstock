@@ -168,6 +168,11 @@ function Positions({ positions }: { positions: PortfolioView["positions"] }) {
               <div className="min-w-0 flex-1">
                 <div className="flex items-center gap-2">
                   <span className="font-medium">{p.symbol}</span>
+                  {p.quantity < 0 && (
+                    <span className="rounded bg-accent/15 px-1.5 py-0.5 text-[9px] font-bold uppercase tracking-wide text-accent">
+                      Short
+                    </span>
+                  )}
                   {p.halted && (
                     <span className="rounded bg-down-dim px-1.5 py-0.5 text-[9px] font-bold uppercase tracking-wide text-down">
                       Halted
@@ -175,11 +180,13 @@ function Positions({ positions }: { positions: PortfolioView["positions"] }) {
                   )}
                 </div>
                 <div className="num mt-0.5 text-[11px] text-muted">
-                  {p.quantity} @ {formatRupees(p.avgCostPaise)}
+                  {Math.abs(p.quantity)} {p.quantity < 0 ? "sold at" : "@"} {formatRupees(p.avgCostPaise)}
                 </div>
               </div>
               <div className="shrink-0 text-right">
-                <div className="num text-[15px] tabular-nums">{formatRupees(p.marketValuePaise)}</div>
+                <div className="num text-[15px] tabular-nums">
+                  {formatRupees(Math.abs(p.marketValuePaise))}
+                </div>
                 <div className="mt-0.5 text-[11px]">
                   <span className={cn("num", p.unrealisedPaise >= 0 ? "text-up" : "text-down")}>
                     {formatRupees(p.unrealisedPaise, { sign: true })}

@@ -80,7 +80,7 @@ async function main() {
       sector: s.sector,
       startingPricePaise: pricePaise,
       volatilityBps: s.volBps,
-      driftBps: driftFor(comp!.id, s.symbol),
+      driftBps: driftFor(comp!.id, s.symbol, comp!.driftSpreadBps),
       liquidity: Math.max(10, Math.round(LIQUIDITY_NOTIONAL_PAISE / pricePaise)),
       seed: seedFromString(`${comp!.id}:${s.symbol}`) % 2_000_000_000,
     };

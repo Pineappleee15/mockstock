@@ -15,6 +15,7 @@ interface Comp {
   orderFlowEnabled: boolean; impactCoefficientBps: number; maxImpactBpsPerTick: number;
   gapHalflifeSeconds: number; permanentImpactBps: number;
   regimeEnabled: boolean; marketFactorBps: number; autoNewsEnabled: boolean;
+  shortSellingEnabled: boolean; driftSpreadBps: number;
   liquidityMultiplierBps: number; shockChanceBps: number;
 }
 
@@ -126,7 +127,10 @@ export function SettingsForm({ competition: c }: { competition: Comp }) {
         <Card className="p-3">
           <h2 className="text-sm font-semibold">Market mood</h2>
           <p className="mb-3 text-[11px] text-muted">
-            Without this every stock moves independently and the session is three hours of
+            Short selling lets a team sell what it does not own and buy it back later. It is
+            deliberately flow-neutral — a short does not push the price down — so it cannot start
+            a cascade, and the concentration cap plus the circuit breaker bound the loss.
+            Without market regimes every stock moves independently and the session is three hours of
             flat noise. With it the market has phases — quiet, choppy, selling off, the
             occasional panic — and stocks fall and recover together, each according to its
             beta. Volatility also runs higher around the open and into the close.
@@ -142,6 +146,11 @@ export function SettingsForm({ competition: c }: { competition: Comp }) {
                 className="size-4 accent-[var(--color-accent)]" />
               Publish queued news automatically
             </label>
+            <label className="flex items-center gap-2 text-sm">
+              <input type="checkbox" name="shortSellingEnabled" defaultChecked={c.shortSellingEnabled}
+                className="size-4 accent-[var(--color-accent)]" />
+              Allow short selling
+            </label>
           </div>
           <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
             <Field label="Market factor (bps)" name="marketFactorBps" type="number"
@@ -150,6 +159,9 @@ export function SettingsForm({ competition: c }: { competition: Comp }) {
             <Field label="Liquidity multiplier (bps)" name="liquidityMultiplierBps" type="number"
               defaultValue={c.liquidityMultiplierBps}
               hint="Below 10000 makes team trading move prices more. Halve it for a small room." />
+            <Field label="Skill vs luck (drift spread, bps/min)" name="driftSpreadBps" type="number"
+              defaultValue={c.driftSpreadBps}
+              hint="How far apart good and bad companies are. Over 400 simulated sessions: 5 has research beating a random pick 75% of the time, 7 gets 86%, 9 reaches 88% and starts making the result a foregone conclusion." />
             <Field label="Shock chance per tick (bps)" name="shockChanceBps" type="number"
               defaultValue={c.shockChanceBps}
               hint="15 is roughly three or four unexplained jolts across a session. 0 turns them off." />
