@@ -602,7 +602,9 @@ export async function generateStoryline(competitionId: number): Promise<ActionRe
       universe.map((s) => ({ id: s.id, symbol: s.symbol, name: s.name, sector: s.sector })),
       sessionMinutes,
       comp.tickIntervalSeconds,
-      { maxImpactPct },
+      // A fresh variant each time, so Regenerate actually rewrites the session
+      // rather than handing back the same stories.
+      { maxImpactPct, variant: Math.floor(Math.random() * 1_000_000) },
     );
     if (plan.length === 0) return { ok: false, error: "Could not plan anything for this session." };
 
@@ -617,7 +619,11 @@ export async function generateStoryline(competitionId: number): Promise<ActionRe
         const [row] = await tx.insert(newsEvents).values({
           competitionId,
           headline: beat.headline,
-          body: `${beat.arcTitle} · part ${beat.arcStep} of ${beat.arcLength}`,
+          // Never the arc title: the body is shown to participants, and
+          // "Contract win · part 1 of 3" gives away both the story and how
+          // much of it is still coming. The admin queue reads arc_id and
+          // arc_step instead.
+          body: null,
           impactBps: beat.impactBps,
           decaySeconds: beat.decaySeconds,
           startTick: beat.tick,

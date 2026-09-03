@@ -3,7 +3,7 @@
 import Link from "next/link";
 import { useEffect, useMemo, useState } from "react";
 import { usePoll } from "@/lib/use-poll";
-import { Card, Change, Badge, Empty, Input, Select, Button } from "@/components/ui";
+import { Card, Change, Badge, Empty, Input, Button } from "@/components/ui";
 import { LivePrice, Spark } from "@/components/price";
 import { WatchStar } from "@/components/watch-star";
 import type { MarketRow, PortfolioView, MarketIndex } from "@/lib/queries";
@@ -17,7 +17,6 @@ export function MarketLive() {
   const { data: pf } = usePoll<PortfolioView>("/api/portfolio", 5000);
 
   const [q, setQ] = useState("");
-  const [sector, setSector] = useState("all");
   const [sort, setSort] = useState<SortKey>("symbol");
   const [desc, setDesc] = useState(false);
   const [onlyWatched, setOnlyWatched] = useState(false);
@@ -28,11 +27,6 @@ export function MarketLive() {
     if (pf?.watched) setWatched(new Set(pf.watched));
   }, [pf?.watched]);
 
-  const sectors = useMemo(
-    () => Array.from(new Set((data?.stocks ?? []).map((s) => s.sector))).sort(),
-    [data],
-  );
-
   const rows = useMemo(() => {
     let list = data?.stocks ?? [];
     const needle = q.trim().toLowerCase();
@@ -40,7 +34,6 @@ export function MarketLive() {
       list = list.filter((s) =>
         s.symbol.toLowerCase().includes(needle) || s.name.toLowerCase().includes(needle));
     }
-    if (sector !== "all") list = list.filter((s) => s.sector === sector);
     if (onlyWatched) list = list.filter((s) => watched.has(s.symbol));
 
     const sorted = [...list].sort((a, b) => {
@@ -49,7 +42,7 @@ export function MarketLive() {
       return a.symbol.localeCompare(b.symbol);
     });
     return desc ? sorted.reverse() : sorted;
-  }, [data, q, sector, sort, desc, onlyWatched, watched]);
+  }, [data, q, sort, desc, onlyWatched, watched]);
 
   const toggle = (key: SortKey) => {
     if (sort === key) setDesc((d) => !d);
@@ -93,11 +86,6 @@ export function MarketLive() {
           placeholder="Search symbol or name" aria-label="Search stocks"
           className="min-w-40 flex-1"
         />
-        <Select value={sector} onChange={(e) => setSector(e.target.value)}
-          aria-label="Filter by sector" className="w-36 shrink-0">
-          <option value="all">All sectors</option>
-          {sectors.map((s) => <option key={s} value={s}>{s}</option>)}
-        </Select>
         <Button
           onClick={() => setOnlyWatched((v) => !v)}
           aria-pressed={onlyWatched}

@@ -4,6 +4,8 @@ import { currentActor } from "@/lib/auth";
 import { activeCompetition } from "@/lib/queries";
 import { NewsTicker } from "@/components/news-ticker";
 import { TabBar } from "@/components/tab-bar";
+import { NewsRail } from "@/components/news-rail";
+import { MoodGround } from "@/components/mood-ground";
 import { ensureTicker } from "@/lib/boot";
 import { logout } from "@/actions/auth";
 
@@ -71,9 +73,13 @@ export default async function AppLayout({ children }: { children: React.ReactNod
 
       <NewsTicker />
 
-      <main className="pad-tabbar mx-auto w-full max-w-6xl flex-1 px-3 py-4">{children}</main>
+      <div className="mx-auto flex w-full max-w-6xl flex-1 gap-8 px-3 py-4">
+        <main className="pad-tabbar min-w-0 flex-1">{children}</main>
+        <NewsRail />
+      </div>
 
       <TabBar />
+      <MoodGround />
     </div>
   );
 }

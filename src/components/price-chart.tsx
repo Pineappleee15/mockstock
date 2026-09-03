@@ -11,16 +11,26 @@ import { formatRupees } from "@/lib/money";
  * relative to the session open.
  */
 export function PriceChart({
-  series, openPaise, up,
-}: { series: Array<{ t: number; p: number }>; openPaise: number; up: boolean }) {
-  // Negative tick indices are pre-open history; zero is the opening bell.
-  const hasHistory = series.some((d) => d.t < 0);
-  if (series.length < 2) {
+  series, openPaise, up, showHistory = true,
+}: {
+  series: Array<{ t: number; p: number }>;
+  openPaise: number;
+  up: boolean;
+  /** False shows only the live session, which is what matters during an event. */
+  showHistory?: boolean;
+}) {
+  const full = series;
+  const live = series.filter((d) => d.t >= 0);
+  // Sixty days of backstory dwarfs a three-hour session, so the live view drops
+  // it entirely rather than trying to fit both on one scale.
+  const data0 = showHistory ? full : (live.length >= 2 ? live : full);
+  const hasHistory = showHistory && data0.some((d) => d.t < 0);
+  if (data0.length < 2) {
     return <div className="flex h-56 items-center justify-center text-sm text-muted">Waiting for prices…</div>;
   }
 
   const colour = up ? "var(--color-up)" : "var(--color-down)";
-  const values = series.map((d) => d.p);
+  const values = data0.map((d) => d.p);
   const min = Math.min(...values, openPaise);
   const max = Math.max(...values, openPaise);
   const pad = Math.max(1, (max - min) * 0.08);
@@ -28,7 +38,7 @@ export function PriceChart({
   return (
     <div className="h-56 w-full sm:h-72">
       <ResponsiveContainer width="100%" height="100%">
-        <AreaChart data={series} margin={{ top: 8, right: 8, bottom: 0, left: 0 }}>
+        <AreaChart data={data0} margin={{ top: 8, right: 8, bottom: 0, left: 0 }}>
           <defs>
             <linearGradient id="fill" x1="0" y1="0" x2="0" y2="1">
               <stop offset="0%" stopColor={colour} stopOpacity={0.28} />

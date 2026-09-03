@@ -2,12 +2,14 @@
 
 import { useMemo, useState } from "react";
 import { usePoll } from "@/lib/use-poll";
-import { Card, Change, Badge, Empty } from "@/components/ui";
-import { LivePrice } from "@/components/price";
+import { Empty } from "@/components/ui";
+import { RollingNumber } from "@/components/rolling-number";
 import { PriceChart } from "@/components/price-chart";
 import { TradePanel } from "@/components/trade-panel";
 import { FundamentalsCard } from "@/components/fundamentals-card";
 import { WatchStar } from "@/components/watch-star";
+import { formatRupees, formatBps } from "@/lib/money";
+import { cn } from "@/lib/cn";
 import type { MarketRow, PortfolioView } from "@/lib/queries";
 import type { Fundamentals } from "@/lib/fundamentals";
 
@@ -23,11 +25,22 @@ interface ChartPayload {
   tickIntervalSeconds: number; series: Array<{ t: number; p: number }>;
 }
 
+/**
+ * The stock page as a hero rather than a report.
+ *
+ * Symbol and price at full size, the chart bleeding to the edges of the screen
+ * with no container around it, and everything else below the fold. A chart in a
+ * bordered box reads as a figure in a document; a chart that touches both edges
+ * reads as the thing you came to look at.
+ */
 export function StockDetail(props: Props) {
   const { data: market } = usePoll<{ stocks: MarketRow[]; state: string }>("/api/market", 5000);
   const { data: chart } = usePoll<ChartPayload>(`/api/chart?symbol=${props.symbol}`, 5000);
   const { data: pf, refresh: refreshPf } = usePoll<PortfolioView>("/api/portfolio", 5000);
   const [flash, setFlash] = useState<string | null>(null);
+  // Today by default once the session has started: during an event the last
+  // three hours matter and the sixty days of backstory only flatten them.
+  const [range, setRange] = useState<"today" | "history">("today");
 
   const row = useMemo(
     () => market?.stocks.find((s) => s.symbol === props.symbol) ?? null,
@@ -38,52 +51,90 @@ export function StockDetail(props: Props) {
   if (!row) return <Empty>Loading {props.symbol}…</Empty>;
 
   const marketOpen = market?.state === "open";
+  const up = row.changeBps >= 0;
+  const hasHistory = (chart?.series ?? []).some((d) => d.t < 0);
 
   return (
-    <div className="space-y-3 pb-24 sm:pb-0">
-      <div className="flex items-start justify-between gap-3">
+    <div className="pb-56 sm:pb-4">
+      <header className="flex items-start justify-between gap-4 pt-2">
         <div className="min-w-0">
           <div className="flex items-center gap-2">
-            <WatchStar symbol={props.symbol} watched={pf?.watched?.includes(props.symbol) ?? false} size="lg" />
-            <h1 className="text-xl font-bold">{props.symbol}</h1>
-            {row.halted && <Badge tone="warn">Halted</Badge>}
+            <h1 className="text-lg font-medium tracking-tight">{props.symbol}</h1>
+            {row.halted && (
+              <span className="rounded bg-down-dim px-1.5 py-0.5 text-[9px] font-bold uppercase tracking-wide text-down">
+                Halted
+              </span>
+            )}
           </div>
-          <p className="truncate text-sm text-muted">{props.name} · {props.sector}</p>
+          <p className="mt-0.5 truncate text-[12px] text-muted">{props.name} · {props.sector}</p>
+
+          <div className="serif mt-3 text-[clamp(2.5rem,11vw,3.75rem)] leading-none">
+            <RollingNumber value={row.pricePaise} format={(n) => formatRupees(Math.round(n))} />
+          </div>
+          <div className={cn("num mt-1 text-sm tabular-nums", up ? "text-up" : "text-down")}>
+            {up ? "+" : ""}{formatBps(row.changeBps)}
+            <span className="ml-2 text-muted">since the open</span>
+          </div>
         </div>
-        <div className="shrink-0 text-right">
-          <LivePrice paise={row.pricePaise} size="xl" />
-          <div className="text-sm"><Change bps={row.changeBps} /> today</div>
-        </div>
-      </div>
+
+        <WatchStar
+          symbol={props.symbol}
+          watched={pf?.watched?.includes(props.symbol) ?? false}
+          size="lg"
+        />
+      </header>
 
       {flash && (
-        <div role="status" className="rounded-md bg-up/10 px-3 py-2 text-sm text-up">{flash}</div>
+        <div role="status" className="mt-4 rounded-xl bg-up/10 px-3 py-2 text-sm text-up">
+          {flash}
+        </div>
       )}
 
-      <Card className="p-2">
+      {/* Full bleed: cancels the page gutter so the chart touches both edges. */}
+      <div className="-mx-3 mt-5">
         <PriceChart
           series={chart?.series ?? []}
           openPaise={chart?.openPaise ?? row.openPaise}
-          up={row.changeBps >= 0}
+          up={up}
+          showHistory={range === "history"}
         />
-      </Card>
+      </div>
 
-      {position && (
-        <Card className="px-3 py-2">
-          <div className="flex flex-wrap items-baseline justify-between gap-x-4 gap-y-1 text-sm">
-            <span className="text-muted">Your position</span>
-            <span className="num">{position.quantity} shares</span>
-            <span className="num text-muted">avg {(position.avgCostPaise / 100).toFixed(2)}</span>
-            <span><Change bps={position.unrealisedBps} /></span>
-          </div>
-        </Card>
+      {hasHistory && (
+        <div className="mt-2 flex justify-center gap-1">
+          {([["today", "Today"], ["history", "60 days"]] as const).map(([key, label]) => (
+            <button
+              key={key} onClick={() => setRange(key)}
+              aria-pressed={range === key}
+              className={cn(
+                "press rounded-full px-3.5 py-1.5 text-[11px] font-medium transition-colors",
+                range === key ? "bg-white/[0.08] text-text" : "text-muted hover:text-text",
+              )}
+            >
+              {label}
+            </button>
+          ))}
+        </div>
       )}
 
-      <FundamentalsCard
-        f={props.fundamentals}
-        pricePaise={row.pricePaise}
-        sector={props.sector}
-      />
+      {position && (
+        <div className="mt-5 flex flex-wrap items-baseline justify-between gap-x-5 gap-y-1 border-y border-border/60 py-3 text-[13px]">
+          <span className="text-muted">You hold</span>
+          <span className="num">{position.quantity} shares</span>
+          <span className="num text-muted">avg {formatRupees(position.avgCostPaise)}</span>
+          <span className={cn("num", position.unrealisedPaise >= 0 ? "text-up" : "text-down")}>
+            {formatRupees(position.unrealisedPaise, { sign: true })}
+          </span>
+        </div>
+      )}
+
+      <div className="mt-6">
+        <FundamentalsCard
+          f={props.fundamentals}
+          pricePaise={row.pricePaise}
+          sector={props.sector}
+        />
+      </div>
 
       <TradePanel
         symbol={props.symbol}

@@ -1,6 +1,6 @@
 import { hash32, uniform } from "./rng";
 import { regimeAt } from "./regime";
-import { ARCS, CROSS_ARCS, type ArcTemplate } from "./storyline-templates";
+import { ARCS, CROSS_ARCS, CRYPTIC_ARCS, type ArcTemplate } from "./storyline-templates";
 
 /**
  * Builds a session's worth of news ahead of time.
@@ -49,11 +49,17 @@ export function planStoryline(
   stocks: StockLike[],
   sessionMinutes: number,
   tickIntervalSeconds: number,
-  opts: { maxImpactPct?: number } = {},
+  opts: { maxImpactPct?: number; variant?: number } = {},
 ): PlannedBeat[] {
   if (stocks.length === 0) return [];
 
   const maxPct = opts.maxImpactPct ?? 4.5;
+  // Everything below is seeded from the competition, which made a plan
+  // reproducible and regeneration pointless — it returned the same stories every
+  // time. The variant shifts the whole seed so "Regenerate" genuinely rewrites
+  // the session. Left at zero it is still reproducible, which the preview
+  // script relies on.
+  const seed = competitionId * 7919 + (opts.variant ?? 0) * 104729;
   const bySector = new Map<string, StockLike[]>();
   for (const s of stocks) bySector.set(s.sector, [...(bySector.get(s.sector) ?? []), s]);
   const sectors = [...bySector.keys()];
@@ -70,7 +76,7 @@ export function planStoryline(
     // Spread arcs across the session, jittered so they are not metronomic, and
     // never in the first three minutes — let people find their feet.
     const slot = (i + 0.5) / arcCount;
-    const jitter = (uniform(hash32(competitionId, i, STREAM), i, STREAM) - 0.5) * (sessionMinutes / arcCount) * 0.5;
+    const jitter = (uniform(hash32(seed, i, STREAM), i, STREAM) - 0.5) * (sessionMinutes / arcCount) * 0.5;
     const startMinute = Math.max(3, Math.min(sessionMinutes - 6, Math.round(slot * sessionMinutes + jitter)));
     const startTick = Math.round((startMinute * 60) / tickIntervalSeconds);
 
@@ -80,10 +86,10 @@ export function planStoryline(
       : mood.key === "selloff" || mood.key === "panic" ? "negative"
       : "any";
 
-    const arc = pickArc(competitionId, i, wants, used);
+    const arc = pickArc(seed, i, wants, used);
     used.add(arc.key);
 
-    const targets = resolveTargets(competitionId, i, arc, stocks, bySector, sectors, usedTargets);
+    const targets = resolveTargets(seed, i, arc, stocks, bySector, sectors, usedTargets);
     if (!targets) continue;
     usedTargets.add(targets.primary.label);
 
@@ -97,7 +103,7 @@ export function planStoryline(
 
       const pct = Math.max(-maxPct, Math.min(maxPct, beat.impactPct));
       out.push({
-        arcId: `${competitionId}-${i}-${arc.key}`,
+        arcId: `${competitionId}-${opts.variant ?? 0}-${i}-${arc.key}`,
         arcTitle: arc.title,
         arcStep: b + 1,
         arcLength: arc.beats.length,
@@ -125,10 +131,10 @@ interface Target {
 
 /** Pick an unused arc whose sentiment fits the mood. */
 function pickArc(
-  competitionId: number, i: number,
+  seed: number, i: number,
   wants: "positive" | "negative" | "any", used: Set<string>,
 ): ArcTemplate {
-  const all = [...ARCS, ...CROSS_ARCS];
+  const all = [...ARCS, ...CROSS_ARCS, ...CRYPTIC_ARCS];
   const fitsMood = (a: ArcTemplate) =>
     wants === "any" || a.sentiment === wants || a.sentiment === "mixed";
 
@@ -141,16 +147,16 @@ function pickArc(
       : all.filter(fitsMood);
 
   const usable = pool.length > 0 ? pool : all;
-  const roll = uniform(hash32(competitionId, i, STREAM + 1), i, STREAM + 1);
+  const roll = uniform(hash32(seed, i, STREAM + 1), i, STREAM + 1);
   return usable[Math.min(usable.length - 1, Math.floor(roll * usable.length))]!;
 }
 
 function resolveTargets(
-  competitionId: number, i: number, arc: ArcTemplate,
+  seed: number, i: number, arc: ArcTemplate,
   stocks: StockLike[], bySector: Map<string, StockLike[]>, sectors: string[],
   usedTargets: Set<string>,
 ): { primary: Target; secondary?: Target } | null {
-  const roll = (n: number) => uniform(hash32(competitionId, i * 10 + n, STREAM + 2), i, STREAM + 2);
+  const roll = (n: number) => uniform(hash32(seed, i * 10 + n, STREAM + 2), i, STREAM + 2);
 
   if (arc.scope === "stock") {
     const fresh = stocks.filter((x) => !usedTargets.has(x.symbol));

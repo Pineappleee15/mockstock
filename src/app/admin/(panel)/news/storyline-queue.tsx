@@ -95,7 +95,7 @@ export function StorylineQueue({
                         {due && <span className="ml-1"><Badge tone="warn">due</Badge></span>}
                       </td>
                       <td className="px-3 py-2">
-                        <div className="max-w-[52ch]">{n.headline}</div>
+                        <div className="max-w-[52ch] whitespace-pre-line leading-snug">{n.headline}</div>
                         {n.story && <div className="mt-0.5 text-[11px] text-muted">{n.story}</div>}
                       </td>
                       <td className="max-w-[20ch] truncate px-3 py-2 text-xs text-muted">

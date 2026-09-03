@@ -8,6 +8,9 @@ interface NewsItem {
 }
 
 /** "just now", "4m ago" — enough to tell a fresh headline from a fading one. */
+/** A scrolling strip cannot show line breaks, so fold them into a separator. */
+const oneLine = (s: string) => s.split("\n").map((l) => l.trim()).filter(Boolean).join(" · ");
+
 function age(iso: string): string {
   const mins = Math.floor((Date.now() - new Date(iso).getTime()) / 60_000);
   if (mins < 1) return "just now";
@@ -50,11 +53,11 @@ export function NewsTicker() {
   const scroll = items.length > 1;
 
   return (
-    <div className="border-b border-border bg-surface-2/70">
+    <div className="border-b border-border bg-surface-2/70 lg:hidden">
       {/* Mobile: newest headline only, never scrolling. */}
       <Link href="/news" className="flex items-center gap-2 px-3 py-1.5 sm:hidden">
         <span className="shrink-0 rounded bg-accent px-1.5 py-0.5 text-[10px] font-bold text-black">NEWS</span>
-        <span className="truncate text-xs">{latest.headline}</span>
+        <span className="truncate text-xs">{oneLine(latest.headline)}</span>
         <span className="ml-auto shrink-0 text-[10px] text-muted">{age(latest.publishedAt)}</span>
       </Link>
 
@@ -72,7 +75,7 @@ export function NewsTicker() {
                   {items.map((n) => (
                     <span key={`${copy}-${n.id}`} className="flex items-center gap-2">
                       <Symbols item={n} />
-                      <span>{n.headline}</span>
+                      <span>{oneLine(n.headline)}</span>
                       <span className="text-muted">{age(n.publishedAt)}</span>
                     </span>
                   ))}
@@ -83,7 +86,7 @@ export function NewsTicker() {
         ) : (
           <div className="flex flex-1 items-center gap-2 truncate text-xs">
             <Symbols item={latest} />
-            <span className="truncate">{latest.headline}</span>
+            <span className="truncate">{oneLine(latest.headline)}</span>
             <span className="ml-auto shrink-0 text-muted">{age(latest.publishedAt)}</span>
           </div>
         )}

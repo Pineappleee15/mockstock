@@ -111,6 +111,63 @@ export const ARCS: ArcTemplate[] = [
   },
 ];
 
+/**
+ * Cryptic arcs.
+ *
+ * The company is never named. The clue points at what a business does, or at
+ * something happening upstream of it, and the room has to work out who it lands
+ * on. Whoever cracks it first buys cheapest, and their own buying is what moves
+ * the price for everyone slower, so the reward for reading well comes out of
+ * the engine rather than being handed out.
+ *
+ * Written over two or three lines so they read as a riddle, not a headline.
+ */
+export const CRYPTIC_ARCS: ArcTemplate[] = [
+  {
+    key: "cryptic-order-book", title: "Cryptic - order book", sentiment: "positive", scope: "stock",
+    beats: [
+      { at: 0, headline: "A ledger somewhere just got longer.\nThe ink is not dry, and nobody has announced anything.", impactPct: 1.2, target: "primary" },
+      { at: 6, headline: "The order was real.\nWhoever read the room first is already holding it.", impactPct: 3.4, target: "primary", decaySeconds: 180 },
+    ],
+  },
+  {
+    key: "cryptic-audit", title: "Cryptic - the auditors", sentiment: "negative", scope: "stock",
+    beats: [
+      { at: 0, headline: "Someone has been asked for their books.\nThey have asked for more time.", impactPct: -1.6, target: "primary" },
+      { at: 6, headline: "More time was not granted.\nThe question was never really about the numbers.", impactPct: -3.6, target: "primary", decaySeconds: 180 },
+    ],
+  },
+  {
+    key: "cryptic-ground", title: "Cryptic - from the ground", sentiment: "mixed", scope: "cross",
+    pairs: [["Metals", "Auto"]],
+    beats: [
+      { at: 0, headline: "What comes out of the ground is dearer this morning.\nGood news, if selling it is your whole business.", impactPct: 3.2, target: "primary", decaySeconds: 180 },
+      { at: 2, headline: "Less good if you buy it by the tonne\nbefore you can sell anything at all.", impactPct: -2.1, target: "secondary", decaySeconds: 180 },
+    ],
+  },
+  {
+    key: "cryptic-currency", title: "Cryptic - the rupee", sentiment: "mixed", scope: "cross",
+    pairs: [["IT", "Energy"]],
+    beats: [
+      { at: 0, headline: "The rupee buys less this morning than it did last night.\nSome people are paid in something else.", impactPct: 2.4, target: "primary", decaySeconds: 180 },
+      { at: 3, headline: "Others have to pay in something else.\nTheir bill just went up.", impactPct: -1.9, target: "secondary", decaySeconds: 180 },
+    ],
+  },
+  {
+    key: "cryptic-shelf", title: "Cryptic - the shelf", sentiment: "positive", scope: "sector",
+    beats: [
+      { at: 0, headline: "Something on every shelf in the country\nis about to get a little cheaper to make.", impactPct: 2.6, target: "primary", decaySeconds: 200 },
+    ],
+  },
+  {
+    key: "cryptic-corner", title: "Cryptic - the corner office", sentiment: "negative", scope: "stock",
+    beats: [
+      { at: 0, headline: "A corner office emptied over the weekend.\nThe statement says personal reasons.\nIt usually does.", impactPct: -2.4, target: "primary" },
+      { at: 7, headline: "A replacement has been found from inside.\nThe market is choosing to believe it.", impactPct: 1.0, target: "primary" },
+    ],
+  },
+];
+
 /** Cross-sector arcs: one side gains exactly because the other loses. */
 export const CROSS_ARCS: ArcTemplate[] = [
   {

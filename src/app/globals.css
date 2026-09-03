@@ -1,19 +1,23 @@
 @import "tailwindcss";
 
 @theme {
-  /* ── Trading surfaces: deep navy, never black ──────────────────────── */
-  --color-bg:        #080f1d;
-  --color-surface:   #0e1930;
-  --color-surface-2: #152343;
-  --color-border:    #22345c;
-  --color-text:      #e9eefb;
-  --color-muted:     #8ea0c4;
+  /* ── Trading surfaces ───────────────────────────────────────────────
+     Warm near-black rather than navy. A cool ground makes green and red
+     look cheap; a warm one lets them sit as jewel tones. */
+  --color-bg:        #0b0a0d;
+  --color-surface:   #141317;
+  --color-surface-2: #1c1a20;
+  --color-border:    #2a272f;
+  --color-text:      #f5f2ed;
+  --color-muted:     #9a9299;
 
-  /* Price direction. Reserved: these two colours mean one thing only. */
-  --color-up:        #2fd07f;
-  --color-up-dim:    #0d3a26;
-  --color-down:      #ff5a63;
-  --color-down-dim:  #491017;
+  /* Price direction. Reserved: these two mean one thing only, ever.
+     Jade and vermilion rather than pure green and red — same reading at a
+     glance, considerably less garish. */
+  --color-up:        #3dd68c;
+  --color-up-dim:    #102e21;
+  --color-down:      #ff5c4d;
+  --color-down-dim:  #3a1512;
 
   /* ── Brand: rose gold ──────────────────────────────────────────────────
      Used for identity, buttons, links, badges and focus rings — never on a
@@ -31,6 +35,8 @@
   --color-ink-soft:    #4a5a7d;
 
   --font-mono: ui-monospace, "SF Mono", "Cascadia Mono", Menlo, Consolas, monospace;
+  --font-sans: var(--font-body), ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+  --font-serif: var(--font-display), Georgia, "Times New Roman", serif;
 }
 
 html, body {
@@ -40,11 +46,31 @@ html, body {
 }
 
 body {
-  font-family: ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+  font-family: var(--font-body), ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
   font-size: 14px;
+  letter-spacing: -0.011em;
+}
+
+/**
+ * The display face. Used for anything a person is meant to read as a headline
+ * or a headline number — never for dense tabular data, where its high contrast
+ * hurts more than it helps.
+ */
+.serif {
+  font-family: var(--font-display), Georgia, serif;
+  font-weight: 400;
+  letter-spacing: -0.02em;
 }
 
 /* A very slow navy wash so the ground has depth rather than reading as flat. */
+/**
+ * The ground breathes with the market.
+ *
+ * --mood is set from the index on the client: 1 when the market is up, -1 when
+ * it is down. The tint is kept far below the threshold of "coloured" — you feel
+ * the market turn before you could name the colour. Any stronger and it stops
+ * being atmosphere and starts being a gimmick.
+ */
 body::before {
   content: "";
   position: fixed;
@@ -52,9 +78,13 @@ body::before {
   pointer-events: none;
   z-index: -1;
   background:
-    radial-gradient(120% 80% at 12% -10%, #16305e 0%, transparent 55%),
-    radial-gradient(90% 70% at 100% 0%, #2a1c39 0%, transparent 50%);
-  opacity: 0.85;
+    radial-gradient(130% 90% at 15% -15%,
+      color-mix(in oklab,
+        var(--color-up) calc(max(var(--mood, 0), 0) * 9%),
+        color-mix(in oklab, var(--color-down) calc(max(calc(var(--mood, 0) * -1), 0) * 9%), #17151c)
+      ) 0%, transparent 62%),
+    radial-gradient(100% 80% at 100% 0%, #1a1620 0%, transparent 55%);
+  transition: background 2.4s ease;
 }
 
 /* Numbers must not jitter while they tick. */

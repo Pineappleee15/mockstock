@@ -38,7 +38,7 @@ export function NewsLive() {
                   <div className="min-w-0">
                     <div className="flex flex-wrap items-center gap-2">
                       {i === 0 && <Badge tone="warn">Latest</Badge>}
-                      <span className="text-sm font-medium">{n.headline}</span>
+                      <span className="whitespace-pre-line text-sm font-medium leading-snug">{n.headline}</span>
                     </div>
                     {n.body && <p className="mt-1 text-xs text-muted">{n.body}</p>}
                     <div className="num mt-1 flex flex-wrap gap-x-2 text-[11px] text-muted">
